@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Артек · Найди свою студию</title>
+<style>
+/* ============================================================
+   DESIGN CONCEPT
+   «Тихая роскошь»: белые 3:2 слайды-«развороты» на холодном фоне #f5f5f7,
+   крупная чистая типографика в духе Apple, много воздуха, мягкие многослойные
+   тени. Один смелый приём — градиентная полоса-«эдж» акцента категории:
+   она живёт на верхнем крае каждой карточки, под заголовком презентации,
+   в маркерах списка и в бейдже. Каталог читается как журнальный, а не как таблица.
+   ============================================================ */
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none !important}
+html,body{height:100%}
+body{
+  font-family:-apple-system,'SF Pro Display','Segoe UI',Roboto,sans-serif;
+  background:#f5f5f7;color:#1d1d1f;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  overflow:hidden;
+}
+:root{
+  --blue:#0057B8;--orange:#FF7A00;--red:#E63946;--ink:#1d1d1f;--bg:#f5f5f7;--paper:#fff;
+  --shadow-1:0 1px 2px rgba(29,29,31,.04),0 8px 24px rgba(29,29,31,.07);
+  --shadow-2:0 2px 6px rgba(29,29,31,.06),0 18px 44px rgba(29,29,31,.13);
+  --ease:cubic-bezier(.22,.61,.36,1);
+}
+button{font-family:inherit}
+button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+
+/* ---------- рамка 3:2 ---------- */
+.stage{height:100vh;display:flex;align-items:center;justify-content:center;padding:clamp(8px,2vw,28px)}
+.frame{
+  position:relative;
+  width:min(96vw,150vh);max-width:min(96vw,150vh);
+  aspect-ratio:3/2;
+  background:var(--paper);border-radius:24px;overflow:hidden;
+  box-shadow:0 2px 8px rgba(29,29,31,.05),0 24px 70px rgba(29,29,31,.14);
+  container:frame/size;
+}
+
+/* ---------- экраны SPA ---------- */
+.screen{position:absolute;inset:0;display:none;flex-direction:column;background:var(--paper)}
+.screen.active{display:flex;animation:screenIn .34s var(--ease) both}
+.screen.no-anim.active{animation:none}
+@keyframes screenIn{from{opacity:0;transform:translateX(var(--sx,26px))}to{opacity:1;transform:none}}
+
+/* ---------- общие элементы ---------- */
+.eyebrow{font-size:clamp(10px,1.05cqw,13px);letter-spacing:.14em;text-transform:uppercase;color:rgba(29,29,31,.45);font-weight:600}
+.btn-primary{
+  display:inline-flex;align-items:center;gap:8px;border:0;cursor:pointer;
+  background:var(--ink);color:#fff;border-radius:999px;
+  min-height:44px;padding:0 clamp(18px,2.4cqw,30px);
+  font-size:clamp(13px,1.4cqw,16px);font-weight:600;letter-spacing:.01em;
+  box-shadow:var(--shadow-1);transition:transform .18s var(--ease),box-shadow .18s var(--ease);
+}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:var(--shadow-2)}
+.btn-primary:active{transform:translateY(0) scale(.98)}
+.btn-primary svg{flex:none}
+.btn-ghost{
+  display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+  border:1.5px solid rgba(29,29,31,.14);background:#fff;color:var(--ink);
+  border-radius:999px;min-height:40px;padding:0 16px;
+  font-size:clamp(12px,1.15cqw,14px);font-weight:600;
+  transition:border-color .16s var(--ease),transform .16s var(--ease);
+}
+.btn-ghost:hover{border-color:var(--ink);transform:translateY(-1px)}
+.badge{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:999px;letter-spacing:.02em;line-height:1.2}
+.badge.age{background:rgba(29,29,31,.06);color:rgba(29,29,31,.75)}
+.badge.f1{background:rgba(230,57,70,.12);color:var(--red)}
+
+/* ============ ЭКРАН 1 · ВВОД ВОЗРАСТА ============ */
+#screen-age{align-items:center;justify-content:center;text-align:center;padding:clamp(16px,4cqw,60px);overflow:hidden}
+.orb{position:absolute;border-radius:50%;filter:blur(70px);pointer-events:none}
+.o1{width:40cqw;height:40cqw;background:var(--blue);opacity:.14;top:-14cqw;left:-12cqw;animation:drift1 16s ease-in-out infinite alternate}
+.o2{width:34cqw;height:34cqw;background:var(--orange);opacity:.13;bottom:-14cqw;right:-10cqw;animation:drift2 19s ease-in-out infinite alternate}
+.o3{width:20cqw;height:20cqw;background:var(--red);opacity:.09;top:8cqw;right:14cqw;animation:drift1 13s ease-in-out infinite alternate-reverse}
+@keyframes drift1{from{transform:translate(0,0) scale(1)}to{transform:translate(4cqw,3cqw) scale(1.08)}}
+@keyframes drift2{from{transform:translate(0,0) scale(1)}to{transform:translate(-4cqw,-2cqw) scale(1.1)}}
+.age-inner{position:relative;z-index:1;max-width:78cqw}
+.age-title{font-size:clamp(26px,4.6cqw,54px);line-height:1.06;letter-spacing:-.02em;font-weight:700;margin:clamp(10px,1.6cqw,20px) 0 clamp(8px,1.2cqw,14px)}
+.age-sub{font-size:clamp(13px,1.45cqw,17px);color:rgba(29,29,31,.6);max-width:52ch;margin:0 auto;line-height:1.5}
+.age-field-row{display:flex;gap:12px;align-items:stretch;justify-content:center;margin-top:clamp(18px,3.2cqw,38px);flex-wrap:wrap}
+.age-field{
+  display:flex;align-items:center;gap:10px;cursor:text;
+  background:#fff;border:1.5px solid rgba(29,29,31,.13);border-radius:18px;
+  padding:0 clamp(14px,1.8cqw,24px);min-height:clamp(56px,7.4cqw,88px);
+  min-width:clamp(150px,17cqw,230px);box-shadow:var(--shadow-1);
+  transition:border-color .2s var(--ease),box-shadow .2s var(--ease);
+}
+.age-field:focus-within{border-color:var(--blue);box-shadow:0 0 0 4px rgba(0,87,184,.12),var(--shadow-1)}
+#ageInput{border:0;outline:0;font:inherit;font-size:clamp(26px,3.5cqw,46px);font-weight:700;width:2.6ch;text-align:center;color:var(--ink);background:transparent;caret-color:var(--blue)}
+.age-unit{font-size:clamp(14px,1.5cqw,18px);color:rgba(29,29,31,.45);font-weight:600}
+.age-error{display:flex;align-items:center;gap:8px;justify-content:center;color:var(--red);font-size:clamp(12px,1.25cqw,15px);font-weight:500;margin-top:clamp(10px,1.6cqw,16px)}
+.age-error[hidden]{display:none}
+.age-error svg{flex:none}
+.age-chips{display:flex;gap:clamp(6px,.8cqw,10px);margin-top:clamp(16px,2.8cqw,32px);flex-wrap:wrap;justify-content:center}
+.age-chip{
+  width:clamp(40px,3.4cqw,48px);height:clamp(40px,3.4cqw,48px);border-radius:50%;
+  border:1.5px solid rgba(29,29,31,.13);background:#fff;cursor:pointer;
+  font-size:clamp(13px,1.3cqw,16px);font-weight:600;color:rgba(29,29,31,.75);
+  transition:all .16s var(--ease);
+}
+.age-chip:hover{transform:translateY(-2px);border-color:var(--ink);color:var(--ink);box-shadow:var(--shadow-1)}
+.age-chip.sel{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* ============ ЭКРАН 2 · СПИСОК СТУДИЙ ============ */
+.list-head{padding:clamp(14px,2.4cqw,28px) clamp(16px,2.8cqw,34px) clamp(8px,1.1cqw,13px);border-bottom:1px solid rgba(29,29,31,.06)}
+.list-title-row{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+#listCounter{font-size:clamp(17px,2.2cqw,27px);font-weight:700;letter-spacing:-.01em;margin-top:5px;line-height:1.2}
+#listCounter b{font-weight:700}
+.counter-sub{font-size:.62em;font-weight:600;color:rgba(29,29,31,.45);white-space:nowrap}
+.filter-row{display:flex;align-items:center;gap:clamp(8px,1.1cqw,14px);margin-top:clamp(10px,1.5cqw,18px);flex-wrap:wrap}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{
+  border-radius:999px;border:1.5px solid rgba(29,29,31,.12);background:#fff;cursor:pointer;
+  min-height:40px;padding:0 14px;font-size:clamp(12px,1.15cqw,14px);font-weight:600;color:rgba(29,29,31,.7);
+  transition:all .16s var(--ease);
+}
+.chip:hover{border-color:rgba(29,29,31,.4)}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.search{position:relative;flex:1;min-width:170px;max-width:330px}
+.search svg{position:absolute;left:13px;top:50%;translate:0 -50%;color:rgba(29,29,31,.4);pointer-events:none}
+.search input{
+  width:100%;min-height:40px;border-radius:999px;border:1.5px solid rgba(29,29,31,.12);
+  padding:0 14px 0 38px;font:inherit;font-size:13.5px;outline:0;background:#fff;
+  transition:border-color .16s,box-shadow .16s;
+}
+.search input:focus{border-color:var(--blue);box-shadow:0 0 0 4px rgba(0,87,184,.1)}
+.switch{display:inline-flex;align-items:center;gap:8px;cursor:pointer;user-select:none;min-height:40px}
+.switch input{position:absolute;opacity:0;width:1px;height:1px}
+.track{width:40px;height:24px;border-radius:999px;background:rgba(29,29,31,.16);position:relative;flex:none;transition:background .18s}
+.track::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .18s var(--ease)}
+.switch input:checked+.track{background:var(--blue)}
+.switch input:checked+.track::after{left:19px}
+.switch input:focus-visible+.track{outline:2px solid var(--blue);outline-offset:2px}
+.switch .lbl{font-size:clamp(12px,1.15cqw,14px);font-weight:600;color:rgba(29,29,31,.7)}
+.list-scroll{
+  flex:1;overflow-y:auto;min-height:0;
+  padding:clamp(12px,1.8cqw,22px) clamp(16px,2.8cqw,34px) clamp(20px,3cqw,36px);
+  scrollbar-width:thin;scrollbar-color:rgba(29,29,31,.22) transparent;
+}
+.list-scroll::-webkit-scrollbar{width:8px}
+.list-scroll::-webkit-scrollbar-thumb{background:rgba(29,29,31,.16);border-radius:8px}
+.list-scroll::-webkit-scrollbar-track{background:transparent}
+.dir-sec{margin-bottom:clamp(14px,2.2cqw,26px)}
+.dir-head{display:flex;align-items:center;gap:10px;margin:4px 0 clamp(10px,1.3cqw,14px)}
+.dir-head h3{font-size:clamp(14px,1.6cqw,19px);font-weight:700;letter-spacing:-.01em}
+.dir-count{font-size:clamp(11px,1.05cqw,13px);font-weight:600;color:rgba(29,29,31,.5);background:rgba(29,29,31,.05);padding:3px 10px;border-radius:999px}
+.dir-line{flex:1;height:1px;background:rgba(29,29,31,.08)}
+.cards-grid{display:grid;grid-template-columns:1fr;gap:clamp(10px,1.2cqw,16px)}
+@container frame (min-width:560px){.cards-grid{grid-template-columns:repeat(2,1fr)}}
+@container frame (min-width:860px){.cards-grid{grid-template-columns:repeat(3,1fr)}}
+@container frame (min-width:1160px){.cards-grid{grid-template-columns:repeat(4,1fr)}}
+.card{
+  position:relative;background:#fff;border:1px solid rgba(29,29,31,.08);border-radius:18px;
+  padding:clamp(13px,1.5cqw,19px) clamp(13px,1.6cqw,21px) clamp(13px,1.6cqw,19px);
+  box-shadow:var(--shadow-1);cursor:pointer;overflow:hidden;
+  transition:transform .2s var(--ease),box-shadow .2s var(--ease);
+}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:var(--acc-g,var(--blue));transition:height .2s var(--ease)}
+.card:hover{transform:translateY(-3px);box-shadow:var(--shadow-2)}
+.card:hover::before{height:6px}
+.card h4{font-size:clamp(14px,1.35cqw,17px);font-weight:700;line-height:1.28;letter-spacing:-.01em;padding-right:64px}
+.card .badges{position:absolute;top:clamp(13px,1.5cqw,19px);right:clamp(13px,1.6cqw,21px);display:flex;gap:5px}
+.card-cat{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:clamp(11px,1.05cqw,12.5px);font-weight:600;color:rgba(29,29,31,.55)}
+.cat-dot{width:8px;height:8px;border-radius:3px;background:var(--acc-g,var(--blue));flex:none}
+.card-meta{margin-top:6px;font-size:clamp(11px,1.05cqw,12.5px);color:rgba(29,29,31,.5);font-weight:500}
+.card-peds{margin-top:10px;font-size:clamp(12px,1.15cqw,13.5px);font-weight:600;color:rgba(29,29,31,.85);line-height:1.4}
+.card-places{margin-top:2px;font-size:clamp(11px,1.05cqw,12.5px);color:rgba(29,29,31,.5);line-height:1.4}
+
+/* ============ ЭКРАН 3 · ПРЕЗЕНТАЦИЯ СТУДИИ ============ */
+/* backBtn теперь вынесен из photoCol и живёт прямо на #screen-studio,
+   чтобы не перекрывать первый фотослот */
+.studio-grid{display:flex;width:100%;height:100%;min-height:0}
+.photo-col{
+  width:40%;flex:none;display:flex;flex-direction:column;gap:7px;
+  /* верхний отступ = высота кнопки «Вернуться» + воздух */
+  padding:66px 4px 16px 16px;
+  position:relative;min-height:0;
+}
+.photo-slot{position:relative;flex:1;min-height:0;border-radius:14px;overflow:hidden;background:var(--bg)}
+.photo-slot img{width:100%;height:100%;object-fit:cover;display:block}
+.slot-empty{
+  position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  border:1.5px dashed rgba(29,29,31,.2);border-radius:14px;color:rgba(29,29,31,.45);
+  font-size:clamp(10.5px,1cqw,13px);text-align:center;padding:10px;cursor:pointer;
+  background:rgba(245,245,247,.6);transition:border-color .18s,color .18s,background .18s;
+}
+.slot-empty:hover{border-color:var(--blue);color:var(--blue);background:rgba(0,87,184,.04)}
+.slot-empty svg{opacity:.55}
+.photo-slot.dragover{box-shadow:inset 0 0 0 3px var(--blue)}
+.frame.editing .photo-slot.has-img{box-shadow:inset 0 0 0 2px rgba(0,87,184,.35)}
+.frame.editing .photo-slot.has-img.dragover{box-shadow:inset 0 0 0 3px var(--blue)}
+.slot-del{
+  position:absolute;top:8px;right:8px;width:32px;height:32px;border-radius:50%;border:0;cursor:pointer;
+  background:rgba(29,29,31,.62);color:#fff;font-size:17px;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  transition:transform .15s var(--ease),background .15s;
+}
+.slot-del:hover{background:var(--red);transform:scale(1.1)}
+.back-btn{
+  position:absolute;top:14px;left:14px;z-index:6;
+  display:inline-flex;align-items:center;gap:7px;min-height:42px;padding:0 16px;
+  border-radius:999px;border:0;cursor:pointer;
+  background:rgba(255,255,255,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  font-size:clamp(12px,1.2cqw,14.5px);font-weight:600;color:var(--ink);
+  opacity:.75;transition:opacity .18s var(--ease),transform .18s var(--ease);
+  box-shadow:0 2px 10px rgba(29,29,31,.08);
+}
+.back-btn:hover{opacity:1;transform:translateY(-1px)}
+.studio-body{width:60%;flex:none;overflow-y:auto;min-height:0;padding:clamp(18px,2.6cqw,34px) clamp(18px,2.9cqw,38px);scrollbar-width:thin;scrollbar-color:rgba(29,29,31,.22) transparent}
+.studio-body::-webkit-scrollbar{width:8px}
+.studio-body::-webkit-scrollbar-thumb{background:rgba(29,29,31,.16);border-radius:8px}
+.st-title{font-size:clamp(21px,2.9cqw,40px);line-height:1.1;letter-spacing:-.02em;font-weight:700;position:relative;padding-bottom:12px;margin-bottom:14px;outline:none}
+.st-title::after{content:'';position:absolute;left:0;bottom:0;width:clamp(44px,5cqw,74px);height:5px;border-radius:99px;background:var(--acc-g,var(--blue))}
+.st-badges{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.cat-badge{display:inline-flex;align-items:center;background:var(--acc-g,var(--blue));color:#fff;font-size:clamp(11px,1.1cqw,13px);font-weight:700;padding:6px 13px;border-radius:999px;letter-spacing:.02em}
+.st-meta{display:flex;gap:8px;flex-wrap:wrap}
+.st-chip{display:inline-flex;align-items:center;background:rgba(29,29,31,.05);border-radius:999px;padding:6px 13px;font-size:clamp(11px,1.1cqw,13px);font-weight:600;color:rgba(29,29,31,.7)}
+.st-label{margin:clamp(12px,1.8cqw,20px) 0 6px;font-size:clamp(10px,.95cqw,11.5px);font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(29,29,31,.4)}
+.st-group{display:flex;align-items:baseline;gap:8px;font-size:clamp(12.5px,1.25cqw,15px);line-height:1.5;margin-top:2px;flex-wrap:wrap}
+.g-ped{font-weight:650;color:var(--ink)}
+.sep{color:rgba(29,29,31,.35)}
+.g-place{color:rgba(29,29,31,.6)}
+.st-desc{margin-top:clamp(12px,1.8cqw,20px);font-size:clamp(13px,1.3cqw,15.5px);line-height:1.55;color:rgba(29,29,31,.8)}
+.st-block{margin-top:clamp(13px,2cqw,22px)}
+.st-block h2{font-size:clamp(15px,1.5cqw,18px);font-weight:700;letter-spacing:-.01em;margin-bottom:8px}
+.st-skills{list-style:none}
+.st-skills li{position:relative;padding-left:20px;margin-top:6px;font-size:clamp(12.5px,1.2cqw,14.5px);line-height:1.5;color:rgba(29,29,31,.8)}
+.st-skills li::before{content:'';position:absolute;left:2px;top:.5em;width:8px;height:8px;border-radius:50%;background:var(--acc-g,var(--blue))}
+.st-result{
+  margin-top:2px;background:#fff;background:color-mix(in srgb,var(--acc-c,var(--blue)) 7%,#ffffff);
+  border-left:4px solid var(--acc-c,var(--blue));border-radius:12px;padding:12px 16px;
+  font-size:clamp(12.5px,1.25cqw,15px);line-height:1.5;color:rgba(29,29,31,.85);font-weight:500;
+}
+
+/* --- режим редактирования --- */
+.frame.editing [contenteditable="true"]{
+  outline:1.5px dashed color-mix(in srgb,var(--acc-c,var(--blue)) 60%,transparent);
+  outline-offset:3px;border-radius:6px;cursor:text;
+  background:transparent;background:color-mix(in srgb,var(--acc-c,var(--blue)) 5%,transparent);
+  transition:background .15s,outline-color .15s;
+}
+.frame.editing [contenteditable="true"]:focus{outline-style:solid;background:transparent}
+.edit-panel{
+  position:absolute;top:14px;right:14px;z-index:9;width:min(280px,44%);
+  background:rgba(255,255,255,.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(29,29,31,.08);border-radius:16px;padding:14px 16px;
+  box-shadow:var(--shadow-2);display:flex;flex-direction:column;gap:8px;
+  animation:panelIn .25s var(--ease);
+}
+@keyframes panelIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+.edit-panel[hidden]{display:none}
+.ep-title{font-weight:700;font-size:14px}
+.ep-hint{font-size:11.5px;color:rgba(29,29,31,.55);line-height:1.45}
+.ep-row{display:flex;flex-direction:column;gap:4px;margin-top:2px}
+.ep-row label{font-size:11px;font-weight:600;color:rgba(29,29,31,.5)}
+.edit-panel select{min-height:40px;border-radius:10px;border:1.5px solid rgba(29,29,31,.14);padding:0 10px;font:inherit;font-size:13px;background:#fff;outline:0;transition:border-color .15s}
+.edit-panel select:focus{border-color:var(--blue)}
+.btn-done{margin-top:4px;min-height:40px;border-radius:12px;border:0;cursor:pointer;background:var(--ink);color:#fff;font-weight:700;font-size:13px;transition:transform .15s var(--ease),box-shadow .15s}
+.btn-done:hover{transform:translateY(-1px);box-shadow:var(--shadow-1)}
+
+/* ---------- служебные элементы рамки ---------- */
+.print-btn{
+  position:absolute;right:14px;bottom:14px;z-index:7;
+  display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:0 12px;
+  border-radius:999px;border:0;cursor:pointer;
+  background:rgba(29,29,31,.07);color:var(--ink);
+  font-size:12px;font-weight:600;opacity:.3;transition:opacity .18s;
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+}
+.print-btn:hover,.print-btn:focus-visible{opacity:1}
+.degrade-badge{
+  position:absolute;left:14px;bottom:14px;z-index:7;
+  font-size:11px;font-weight:600;color:rgba(29,29,31,.6);
+  background:rgba(29,29,31,.06);border-radius:999px;padding:6px 12px;
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  max-width:44%;
+}
+
+/* ---------- тост ---------- */
+.toast{
+  position:fixed;left:50%;bottom:26px;translate:-50% 0;z-index:300;
+  background:var(--ink);color:#fff;padding:11px 20px;border-radius:999px;
+  font-size:13.5px;font-weight:600;box-shadow:var(--shadow-2);
+  opacity:0;pointer-events:none;max-width:86vw;text-align:center;
+  transition:opacity .25s var(--ease),translate .25s var(--ease);
+}
+.toast.show{opacity:1;translate:-50% -6px}
+
+/* ---------- модалка кадрирования ---------- */
+.crop-overlay{
+  position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;
+  background:rgba(29,29,31,.45);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  animation:overlayIn .2s var(--ease);
+}
+@keyframes overlayIn{from{opacity:0}to{opacity:1}}
+.crop-overlay[hidden]{display:none}
+.crop-modal{background:#fff;border-radius:20px;padding:18px 20px;width:min(940px,94vw);max-height:94vh;box-shadow:0 30px 90px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:10px}
+.crop-title{font-weight:700;font-size:16px}
+.crop-hint{font-size:12px;color:rgba(29,29,31,.55)}
+.crop-area{display:flex;align-items:center;justify-content:center;height:min(56vh,540px);background:var(--bg);border-radius:14px;overflow:hidden;position:relative}
+.crop-stage{position:relative;touch-action:none;user-select:none;-webkit-user-select:none;box-shadow:0 4px 18px rgba(29,29,31,.18);line-height:0}
+.crop-stage img{display:block;pointer-events:none;max-width:none}
+.crop-sel{position:absolute;border:1.5px solid #fff;box-shadow:0 0 0 9999px rgba(29,29,31,.55);cursor:move}
+.crop-sel .grid{position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.3) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.3) 1px,transparent 1px);background-size:33.34% 33.34%;background-position:-1px -1px}
+.h{position:absolute;background:#fff;border-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.h.n,.h.s{left:20%;right:20%;height:8px;cursor:ns-resize}
+.h.n{top:-4px}.h.s{bottom:-4px}
+.h.w,.h.e{top:20%;bottom:20%;width:8px;cursor:ew-resize}
+.h.w{left:-4px}.h.e{right:-4px}
+.h.nw,.h.ne,.h.sw,.h.se{width:14px;height:14px;border-radius:50%}
+.h.nw{left:-7px;top:-7px;cursor:nwse-resize}
+.h.se{right:-7px;bottom:-7px;cursor:nwse-resize}
+.h.ne{right:-7px;top:-7px;cursor:nesw-resize}
+.h.sw{left:-7px;bottom:-7px;cursor:nesw-resize}
+.crop-actions{display:flex;justify-content:flex-end;gap:10px}
+
+/* ---------- узкий контейнер (<720px внутри рамки) ---------- */
+@container frame (max-width:719px){
+  .studio-grid{flex-direction:column}
+  .photo-col{
+    width:100%;flex:none;
+    height:24%;min-height:120px;
+    flex-direction:row;gap:7px;
+    /* верхний отступ под компактную кнопку «Вернуться» */
+    padding:44px 12px 12px 12px;
+  }
+  .photo-slot{width:33.333%;flex:none;height:100%}
+  .slot-empty{font-size:9px;padding:4px;gap:4px}
+  .slot-empty svg{width:16px;height:16px}
+  .studio-body{width:100%;flex:1}
+  .back-btn{
+    top:8px;left:8px;
+    min-height:32px;padding:0 10px;
+    font-size:11px;gap:4px;
+  }
+  .back-btn svg{width:12px;height:12px}
+}
+
+/* ---------- сокращённые движения ---------- */
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.12s !important;transition-duration:.12s !important}
+  .screen.active{animation:fadeOnly .12s linear both}
+  @keyframes fadeOnly{from{opacity:0}to{opacity:1}}
+  .orb{animation:none !important}
+}
+
+/* ============ ПЕЧАТЬ ============ */
+@media print{
+  @page{size:A4 landscape;margin:0}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  html,body{height:auto;overflow:visible;background:#fff}
+  .stage{height:auto;display:block;padding:0}
+  .frame{width:100%;height:100vh;max-width:none;aspect-ratio:auto;border-radius:0;box-shadow:none;overflow:hidden}
+  .print-hide{display:none !important}
+  .slot-empty{display:none !important}
+  .photo-slot:not(.has-img){display:none !important}
+  .screen{display:none !important}
+  .screen.active{display:flex !important;animation:none !important}
+  .list-scroll{overflow:hidden}
+  .studio-body{overflow:hidden}
+  .card{box-shadow:none;break-inside:avoid}
+  .crop-overlay,.toast{display:none !important}
+}
+</style>
+</head>
+<body>
+<div class="stage">
+  <main class="frame" id="frame">
+
+    <!-- ЭКРАН 1 · ВВОД ВОЗРАСТА -->
+    <section id="screen-age" class="screen" aria-label="Ввод возраста">
+      <div class="orb o1" aria-hidden="true"></div>
+      <div class="orb o2" aria-hidden="true"></div>
+      <div class="orb o3" aria-hidden="true"></div>
+      <div class="age-inner">
+        <p class="eyebrow">ФГБОУ МДЦ «Артек» · Центр дополнительного образования</p>
+        <h1 class="age-title">Найди свою студию<br>в&nbsp;Артеке</h1>
+        <p class="age-sub">51 студия творчества, науки, техники и спорта. Напиши, сколько тебе лет, — и мы покажем, куда ты можешь записаться.</p>
+        <div class="age-field-row">
+          <label class="age-field" for="ageInput">
+            <input id="ageInput" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" placeholder="—" aria-label="Твой возраст, от 8 до 17 лет" enterkeyhint="done">
+            <span class="age-unit">лет</span>
+          </label>
+          <button id="ageNext" class="btn-primary print-hide" type="button">
+            Продолжить
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+        <p class="age-error print-hide" id="ageError" role="status" aria-live="polite" hidden>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+          <span id="ageErrorText"></span>
+        </p>
+        <div class="age-chips print-hide" id="ageChips" role="group" aria-label="Быстрый выбор возраста"></div>
+      </div>
+    </section>
+
+    <!-- ЭКРАН 2 · СПИСОК СТУДИЙ -->
+    <section id="screen-list" class="screen" aria-label="Каталог студий">
+      <header class="list-head">
+        <div class="list-title-row">
+          <div>
+            <p class="eyebrow">Каталог студий</p>
+            <h2 id="listCounter"></h2>
+          </div>
+          <button id="changeAgeBtn" class="btn-ghost print-hide" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg>
+            Сменить возраст
+          </button>
+        </div>
+        <div class="filter-row print-hide">
+          <div class="chips" id="dirChips" role="group" aria-label="Направленность"></div>
+          <div class="search">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <input id="searchInput" type="text" placeholder="Поиск: студия, педагог, категория, площадка" aria-label="Поиск по названию, категории, педагогу и площадке" autocomplete="off">
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="hideF1">
+            <span class="track" aria-hidden="true"></span>
+            <span class="lbl">Скрыть F1</span>
+          </label>
+        </div>
+      </header>
+      <div class="list-scroll" id="listScroll">
+        <div id="studioGroups"></div>
+      </div>
+    </section>
+
+    <!-- ЭКРАН 3 · ПРЕЗЕНТАЦИЯ СТУДИИ -->
+    <section id="screen-studio" class="screen" aria-label="Презентация студии">
+      <!-- Кнопка «Вернуться» вынесена из photoCol, чтобы не перекрывать первый фотослот -->
+      <button id="backBtn" class="back-btn print-hide" type="button">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+        Вернуться
+      </button>
+      <div class="studio-grid" id="studioRoot">
+        <div class="photo-col" id="photoCol"></div>
+        <div class="studio-body">
+          <h1 class="st-title" id="stTitle" data-field="title"></h1>
+          <div class="st-badges">
+            <span class="cat-badge" id="stCat" data-field="catLabel"></span>
+            <span class="badge f1" id="stF1" hidden>F1</span>
+          </div>
+          <p class="st-meta">
+            <span class="st-chip" id="stAge" data-field="ageLabel"></span>
+            <span class="st-chip" id="stCap" data-field="capLabel"></span>
+          </p>
+          <p class="st-label">Педагоги и площадки</p>
+          <div id="stGroups"></div>
+          <p class="st-desc" id="stDesc" data-field="desc"></p>
+          <div class="st-block">
+            <h2>Чему научитесь</h2>
+            <ul class="st-skills" id="stSkills"></ul>
+          </div>
+          <div class="st-block">
+            <h2>Результат</h2>
+            <p class="st-result" id="stResult" data-field="result"></p>
+          </div>
+        </div>
+      </div>
+      <div class="edit-panel print-hide" id="editPanel" hidden>
+        <p class="ep-title">Режим редактирования</p>
+        <p class="ep-hint">Внесите изменения и нажмите «Готово»</p>
+        <div class="ep-row">
+          <label for="accentSelect">Тип студии (акцент)</label>
+          <select id="accentSelect">
+            <option value="">По категории (по умолчанию)</option>
+            <option value="Художественная">Художественная</option>
+            <option value="Техническая">Техническая</option>
+            <option value="Естественно-научная">Естественно-научная</option>
+            <option value="Физкультурно-спортивная">Физкультурно-спортивная</option>
+          </select>
+        </div>
+        <button id="editDone" class="btn-done" type="button">Готово</button>
+      </div>
+    </section>
+
+    <div class="degrade-badge print-hide" id="degradeBadge" hidden>Изменения не сохранятся в этом браузере</div>
+    <button class="print-btn print-hide" id="printBtn" type="button" title="Печать текущего экрана">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>
+      <span>Печать</span>
+    </button>
+  </main>
+</div>
+
+<!-- Модалка кадрирования -->
+<div class="crop-overlay print-hide" id="cropOverlay" hidden>
+  <div class="crop-modal" role="dialog" aria-modal="true" aria-label="Кадрирование фото">
+    <p class="crop-title">Кадрирование фото</p>
+    <p class="crop-hint">Переместите и измените размер области, затем нажмите «Применить»</p>
+    <div class="crop-area" id="cropArea">
+      <div class="crop-stage" id="cropStage">
+        <img id="cropImg" alt="Превью фото для кадрирования">
+        <div class="crop-sel" id="cropSel">
+          <span class="grid" aria-hidden="true"></span>
+          <span class="h n" data-h="n" aria-hidden="true"></span>
+          <span class="h s" data-h="s" aria-hidden="true"></span>
+          <span class="h w" data-h="w" aria-hidden="true"></span>
+          <span class="h e" data-h="e" aria-hidden="true"></span>
+          <span class="h nw" data-h="nw" aria-hidden="true"></span>
+          <span class="h ne" data-h="ne" aria-hidden="true"></span>
+          <span class="h sw" data-h="sw" aria-hidden="true"></span>
+          <span class="h se" data-h="se" aria-hidden="true"></span>
+        </div>
+      </div>
+    </div>
+    <div class="crop-actions">
+      <button id="cropCancel" class="btn-ghost" type="button">Отмена</button>
+      <button id="cropApply" class="btn-primary" type="button">Применить</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast print-hide" id="toast" role="status" aria-live="polite"></div>
+<input type="file" id="filePick" accept="image/*" hidden>
+
+<script>
+'use strict';
+/* ============================================================
+   ДАННЫЕ · 51 студия
+   ============================================================ */
+const STUDIOS = [
+{id:'avtorskaya-kniga', title:'Авторская книга', cat:'Слово и речь', min:null, cap:12, groups:[{ped:'Незговорова Наталья Анатольевна', place:'Художественная студия'}],
+ desc:'Придумывать истории — это как строить свой мир из слов. Ты создашь собственную книгу: сюжет, героев, обложку. Научишься писать так, чтобы читатель не мог оторваться. В конце смены тебя ждёт настоящая авторская книга с твоим именем.',
+ skills:['Придумывать сюжет и героев','Писать яркие и живые тексты','Редактировать свои черновики','Работать с композицией книги','Оформлять обложку и иллюстрации'],
+ result:'Увезёшь домой свою авторскую книгу — с напечатанным текстом и твоим именем на обложке.'},
+{id:'narodnye-promysly', title:'Народно-художественные промыслы', cat:'Декоративно-прикладное творчество', min:10, cap:10, groups:[{ped:'Павлова Светлана Михайловна', place:'Художественная студия'}],
+ desc:'Ты познакомишься с ремёслами, которыми веками славится Россия. Распишешь разделочную доску, как городецкие мастера, и узнаешь секреты народных узоров. Каждый узор — маленькое путешествие в прошлое.',
+ skills:['Различать народные промыслы России','Расписывать дерево по мотивам Городца','Составлять узоры из растительных элементов','Работать кистью и красками','Бережно относиться к традициям'],
+ result:'Работы в духе народных мастеров, сделанные твоими руками, — ими можно по-настоящему гордиться.'},
+{id:'batik', title:'Батик. Художественная роспись по ткани', cat:'Декоративно-прикладное творчество', min:null, cap:10, groups:[{ped:'Павлова Светлана Михайловна', place:'Белая дача'}],
+ desc:'Представь, что ткань становится холстом, а краски растекаются по ней волшебными пятнами. Ты освоишь роспись по шёлку в технике холодного батика. Создашь платок или панно, которого больше нет ни у кого в мире.',
+ skills:['Натягивать ткань на подрамник','Работать с резервирующим составом','Смешивать краски для ткани','Создавать плавные цветовые переходы','Оформлять готовую работу'],
+ result:'Расписанный тобою платок или панно — единственный в своём роде подарок себе или близким.'},
+{id:'linogravyura', title:'Линогравюра', cat:'Изобразительное искусство', min:null, cap:10, groups:[{ped:'Грозова Елизавета Анатольевна', place:'Художественная студия'}],
+ desc:'Хочешь печатать картинки, как настоящий художник? Ты вырежешь рисунок на линолеуме специальными резцами и сделаешь свои первые печатные оттиски. Это ремесло для терпеливых — и очень увлекательное.',
+ skills:['Придумывать выразительную композицию','Работать резцами по линолеуму','Смешивать печатную краску','Делать оттиски на бумаге','Подписывать и оформлять гравюру'],
+ result:'Серия авторских оттисков, сделанных своими руками, — настоящая графичная коллекция.'},
+{id:'mir-iskusstva', title:'Мир искусства', cat:'Изобразительное искусство', min:null, cap:12, groups:[{ped:'Красикова Виктория Станиславовна', place:'Художественная студия'}],
+ desc:'Ты попробуешь себя в разных техниках: рисунок, живопись, композиция. Узнаешь, как художники видят цвет и форму, и научишься замечать красоту в обычных вещах. Каждая работа — новый шаг твоего мастерства.',
+ skills:['Строить композицию листа','Работать карандашом и акварелью','Передавать свет и тень','Замечать цветовые оттенки','Обсуждать работы художников'],
+ result:'Папка твоих работ в разных техниках и уверенность: рисовать ты умеешь по-настоящему.'},
+{id:'mozaika', title:'Мозаика', cat:'Декоративно-прикладное творчество', min:10, cap:11, groups:[{ped:'Шевченко Валентина Александровна', place:'Художественная студия'}],
+ desc:'Мозаика — искусство из тысяч маленьких кусочков. Ты соберёшь собственное панно из цветной смальты и узнаешь секреты древних мастеров. Здесь важно терпение — и результат тебя обязательно удивит.',
+ skills:['Составлять эскиз панно','Колоть и подбирать кусочки смальты','Выкладывать рисунок по эскизу','Работать с клеевым основанием','Затирать и полировать поверхность'],
+ result:'Собственное мозаичное панно, которое украсит любую стену дома.'},
+{id:'vitrazhnaya-rospis', title:'Витражная роспись', cat:'Декоративно-прикладное творчество', min:10, cap:10, groups:[{ped:'Аринкина Ирина Игоревна', place:'Белая дача'}],
+ desc:'Свет, проходя через витраж, превращается в разноцветное чудо. Ты распишешь стекло специальными красками и создашь свою витражную картину. А ещё узнаешь, как устроены витражи старых соборов.',
+ skills:['Составлять эскиз витража','Наносить контур по стеклу','Работать витражными красками','Смешивать цвета прямо на стекле','Оформлять работу в рамку'],
+ result:'Витражная картина из стекла, которая играет на свету всеми цветами.'},
+{id:'pod-krylom-zhar-ptitsy', title:'Под крылом Жар-птицы', cat:'Изобразительное искусство', min:null, cap:8, groups:[{ped:'Красикова Виктория Станиславовна', place:'Художественная студия'}],
+ desc:'Сказки оживают, когда их рисуешь. Ты будешь создавать образы русской сказки: Жар-птицу, волшебные сады и чудо-терема. Научишься воплощать фантазию на бумаге — ярко, смело и по-своему.',
+ skills:['Рисовать сказочных персонажей','Придумывать волшебные образы','Работать гуашью и акварелью','Создавать яркие сказочные фоны','Оформлять сказочную композицию'],
+ result:'Сказочные картины, придуманные и нарисованные тобой от первого до последнего мазка.'},
+{id:'meditsina-dlya-nachinayushchih', title:'Человек и его здоровье: медицина для начинающих', cat:'Наука и природа', min:null, cap:12, groups:[{ped:'Плечко Елена Евгеньевна', place:'Белая дача'}],
+ desc:'Как устроен человек и почему он болеет? Ты узнаешь, как работают сердце, лёгкие и мозг, научишься оказывать первую помощь. Это знания, которые пригодятся всю жизнь, — и, может быть, ты выберешь профессию врача.',
+ skills:['Понимать, как устроен организм','Оказывать первую помощь','Измерять пульс и давление','Разбираться в здоровом образе жизни','Проводить простые опыты'],
+ result:'Поймёшь, как устроен твой организм, и научишься помогать себе и другим.'},
+{id:'verhovaya-ezda', title:'Обучение первичным навыкам верховой езды', cat:'Спорт и здоровье', min:12, cap:8, f:'F1', groups:[{ped:'Степанова О.В., Акишев Д.С.', place:'Ферма'}],
+ desc:'Лошадь чувствует настроение человека и отвечает доверием на заботу. Ты научишься седлать коня, правильно сидеть в седле и управлять им на шагу и рыси. Это дружба, спорт и чистый воздух фермы.',
+ skills:['Ухаживать за лошадью','Седлать и расседлывать коня','Правильно сидеть в седле','Управлять лошадью на шагу и рыси','Быть спокойным и уверенным'],
+ result:'Освоишь первые навыки верховой езды и найдёшь настоящего четвероногого друга.'},
+{id:'strelba-iz-luka', title:'Стрельба из лука', cat:'Спорт и здоровье', min:13, cap:12, f:'F1', groups:[{ped:'Карпов Сергей Арьевич', place:'д/л Лесной, корпус «Калина»'}],
+ desc:'Тысячи лет назад так метко стреляли лучшие воины, а сегодня это олимпийский вид спорта. Ты освоишь стойку, натяжение тетивы и дыхание перед выстрелом. И однажды увидишь, как твоя стрела попадает в «десятку».',
+ skills:['Стоять в правильной стойке','Натягивать тетиву и целиться','Контролировать дыхание','Соблюдать правила безопасности','Считать очки и вести турнир'],
+ result:'Уверенные попадания в цель и настоящий спортивный характер.'},
+{id:'eko-grad', title:'Эко-град', cat:'Наука и природа', min:null, cap:15, groups:[{ped:'Юсуповская Нина Федоровна', place:'БВК, д/л «Речной»'}],
+ desc:'Как сделать город дружелюбным к природе? Ты вместе с друзьями будешь проектировать эко-город: зелёные крыши, солнечные батареи, умный транспорт. Твои идеи могут изменить будущее — начинать можно уже сейчас.',
+ skills:['Проектировать эко-город','Разбираться в экологии города','Строить макеты из разных материалов','Работать в команде проекта','Защищать свои идеи перед другими'],
+ result:'Макет города будущего, созданный твоей командой, и первый опыт настоящих проектов.'},
+{id:'yunyj-geolog', title:'Юный геолог', cat:'Наука и природа', min:12, cap:10, groups:[{ped:'Дунаев Владимир Иванович', place:'СЮТ'}],
+ desc:'Каждый камень хранит историю Земли длиной в миллионы лет. Ты научишься определять минералы, собирать коллекции и читать слои земли, как страницы книги. Настоящие геологи работают и в Артеке!',
+ skills:['Определять минералы и горные породы','Вести полевой дневник','Собирать и оформлять коллекцию','Работать с компасом и картой','Понимать строение Земли'],
+ result:'Своя коллекция камней и умение читать землю, как увлекательную книгу.'},
+{id:'astronomiya', title:'Астрономия', cat:'Наука и природа', min:10, cap:11, groups:[{ped:'Онищенко Юрий Дмитриевич', place:'Комплекс «Вожатый», 5 этаж'}],
+ desc:'Звёзды ближе, чем кажется. Ты узнаешь, как устроена Вселенная, найдёшь на небе созвездия и планеты, посмотришь на кратеры Луны в телескоп. Ночное небо Артека станет твоей картой звёздных странствий.',
+ skills:['Находить созвездия на небе','Различать планеты и звёзды','Наблюдать в телескоп','Понимать устройство Солнечной системы','Вести дневник наблюдений'],
+ result:'Будешь свободно ориентироваться по звёздному небу и знать главные тайны Вселенной.'},
+{id:'mylnye-chudesa', title:'Мыльные чудеса', cat:'Декоративно-прикладное творчество', min:10, cap:10, groups:[{ped:'Козлова Алина Валерьевна', place:'д/л Морской'}],
+ desc:'Ароматное мыло можно сварить своими руками — цветное, душистое, любой формы. Ты будешь подбирать цвета и запахи, заливать формы и украшать свои чудеса. А домой увезёшь целый ароматный набор.',
+ skills:['Варить мыло из основы','Подбирать ароматы и цвета','Заливать мыльные формы','Украшать и упаковывать мыло','Придумывать свои рецепты'],
+ result:'Набор ароматного мыла ручной работы — красивого, душистого и полезного.'},
+{id:'vyshivka-floristika', title:'Вышивка картин + флористика', cat:'Декоративно-прикладное творчество', min:null, cap:12, groups:[{ped:'Муклинова Татьяна Александровна', place:'Белая Дача'}],
+ desc:'Игла и нитка умеют рисовать не хуже кисти. Ты вышьешь свою первую картину гладью или крестиком, а ещё составишь нежные композиции из цветов. Тонкая работа учит сосредоточенности и спокойствию.',
+ skills:['Вышивать гладью и крестиком','Разбираться в видах швов','Подбирать нитки по цвету','Составлять флористические композиции','Оформлять работу в раму'],
+ result:'Вышитая картина и цветочная композиция, сделанные твоими руками.'},
+{id:'graficheskiy-dizayn', title:'Графический дизайн', cat:'Медиа и фото', min:12, cap:12, groups:[{ped:'Павличенко Л.Д., Кобец В.А.', place:'Белая дача'}],
+ desc:'Шрифты, цвета, логотипы — всё это язык, на котором дизайнеры говорят с миром. Ты научишься создавать афиши, логотипы и открытки в графическом редакторе. Твой взгляд на привычные вещи изменится навсегда.',
+ skills:['Работать в графическом редакторе','Подбирать шрифты и цвета','Придумывать логотипы','Создавать афиши и открытки','Собирать портфолио работ'],
+ result:'Портфолио графических работ — от первого логотипа до плаката твоего проекта.'},
+{id:'gitara-barokko-rok', title:'Гитара. От барокко до рока', cat:'Музыка и сцена', min:10, cap:8, groups:[{ped:'Шевченко Игорь Николаевич', place:'Белая Дача'}],
+ desc:'Одна гитара — и четыре века музыки. Ты услышишь, как звучат старинные менуэты, и сам сыграешь рок-риффы. Начнёшь с простых аккордов, а к концу смены сыграешь свои первые песни.',
+ skills:['Ставить аккорды','Играть перебором и боем','Читать табулатуры','Играть мелодии разных эпох','Выступать перед слушателями'],
+ result:'Сумеешь сыграть на гитаре несколько мелодий — от барокко до рока.'},
+{id:'gitara-ansambl', title:'Обучение игре на гитаре в эстрадном ансамбле', cat:'Музыка и сцена', min:10, cap:13, groups:[{ped:'Нечаев Руслан Владимирович', place:'Белая Дача'}],
+ desc:'Игра в ансамбле — это музыкальный диалог: ты слышишь друзей, а они тебя. Вы вместе разучите эстрадные хиты и выступите на артековской сцене. Гитара в руках — и аплодисменты в ответ.',
+ skills:['Играть аккорды и ритм','Слушать партнёров по ансамблю','Держать общий ритм группы','Разучивать эстрадные песни','Выступать на сцене'],
+ result:'Совместный концерт с ансамблем и уверенность на любой сцене.'},
+{id:'kvilling', title:'Квиллинг', cat:'Декоративно-прикладное творчество', min:10, cap:12, groups:[{ped:'Ариничева Елена Александровна', place:'Хрустальный'}],
+ desc:'Из простых бумажных полосок скручиваются удивительные узоры. Ты освоишь технику бумагокручения и соберёшь объёмную картину или ажурную открытку. Это почти волшебство — из ничего рождается красота.',
+ skills:['Скручивать бумажные роллы','Придавать роллам разные формы','Собирать узоры из элементов','Составлять композицию картины','Аккуратно работать с клеем'],
+ result:'Ажурная картина или открытка из бумаги — лёгкая, как кружево.'},
+{id:'risuyu-guashyu', title:'Рисую гуашью', cat:'Изобразительное искусство', min:null, cap:12, groups:[{ped:'Маликовская Евгения Евгеньевна', place:'Белая дача'}],
+ desc:'Гуашь — краски смелые и яркие, как лето. Ты научишься смешивать цвета, писать пейзажи и натюрморты, не бояться большого листа. Каждый сеанс — новая картина и новое открытие в цвете.',
+ skills:['Смешивать цвета на палитре','Писать пейзаж и натюрморт','Работать мазком','Передавать настроение красками','Доводить работу до результата'],
+ result:'Несколько законченных картин гуашью — ярких и уверенных.'},
+{id:'keramika-art', title:'Керамика АРТ', cat:'Декоративно-прикладное творчество', min:10, cap:12, groups:[{ped:'Грива Елена Сергеевна', place:'Белая Дача'},{ped:'Никулина Ирина Геннадьевна', place:'Белая Дача'}],
+ desc:'Глина послушна в руках, которые её любят. Ты будешь лепить из керамики посуду, фигурки и скульптуры, а потом увидишь свои работы после обжига. Из куска глины рождается настоящее искусство.',
+ skills:['Лепить из глины разными способами','Работать на гончарном круге','Декорировать изделия','Понимать процесс обжига','Придумывать свои формы'],
+ result:'Керамические работы, прошедшие обжиг, — от первой чашки до скульптуры.'},
+{id:'master-keramist', title:'Мастер-керамист', cat:'Декоративно-прикладное творчество', min:10, cap:10, groups:[{ped:'Аринкина Ирина Игоревна', place:'Белая дача'}],
+ desc:'Хочешь стать настоящим мастером керамики? Ты глубже погрузишься в ремесло: лепка, гончарный круг, глазури и обжиг. Каждое изделие проходит долгий путь — от комка глины до звонкой чашки.',
+ skills:['Освоить гончарный круг','Лепить сложные формы','Работать с глазурями','Понимать свойства глины','Доводить изделия до идеала'],
+ result:'Самостоятельно сделанные керамические изделия с авторской глазурью.'},
+{id:'modelirovanie-igrushek', title:'Моделирование игрушек', cat:'Декоративно-прикладное творчество', min:10, cap:10, groups:[{ped:'Князева Зоя Александровна', place:'Художественная студия'}],
+ desc:'Игрушка, сделанная своими руками, тёплая, как ладони, что её создали. Ты придумаешь персонажа, построишь для него выкройку и соберёшь из деталей. Может быть, это будет целый игрушечный мир.',
+ skills:['Придумывать образ игрушки','Строить простые выкройки','Соединять детали аккуратно','Расписывать и декорировать','Придумывать игры со своей игрушкой'],
+ result:'Авторская игрушка, придуманная и сделанная тобой с нуля.'},
+{id:'myagkaya-igrushka', title:'Мягкая игрушка', cat:'Декоративно-прикладное творчество', min:10, cap:10, groups:[{ped:'Безлюдько Людмила Васильевна', place:'д/л Хрустальный'}],
+ desc:'Ткань, нитки, синтепон и капелька фантазии — вот и всё, что нужно для доброго друга. Ты выкроишь, сошьёшь и оживишь мягкую игрушку. Такие вещи хранят всю жизнь и дарят с любовью.',
+ skills:['Шить ручными швами','Раскроить ткань по выкройке','Набивать и собирать игрушку','Пришивать глазки и носики','Придумывать характер игрушки'],
+ result:'Мягкий друг, сшитый твоими руками, — тёплый и неповторимый.'},
+{id:'oberegi', title:'Обереги', cat:'Декоративно-прикладное творчество', min:null, cap:9, groups:[{ped:'Кондратюк Рита Анатольевна', place:'д/л Янтарный'}],
+ desc:'Наши предки делали обереги, чтобы беречь дом и близких. Ты создашь традиционную куклу-оберег без иголки и ножниц и узнаешь значение старинных символов. Это тихое рукоделие с добрым смыслом.',
+ skills:['Плести куклу-оберег из нитей','Понимать значения символов','Работать с тканью и лыком','Подбирать цвета по традиции','Создавать оберег для дома'],
+ result:'Традиционный оберег, сделанный по старинным правилам, — для тебя или для семьи.'},
+{id:'pirografiya', title:'Пирография', cat:'Декоративно-прикладное творчество', min:12, cap:10, groups:[{ped:'Маликовская Евгения Евгеньевна', place:'Белая Дача'}],
+ desc:'Выжигать по дереву — значит рисовать огнём. Ты научишься владеть выжигателем: от тонких линий до теней и штрихов. Доска превращается в картину, а у тебя появляется очень спокойное хобби.',
+ skills:['Работать выжигателем','Наносить линии и штриховку','Переводить эскиз на дерево','Создавать тени выжиганием','Обрабатывать готовую работу'],
+ result:'Картина, выжженная по дереву твоей рукой, — с неповторимой фактурой.'},
+{id:'pechvork', title:'Пэчворк', cat:'Декоративно-прикладное творчество', min:null, cap:9, groups:[{ped:'Кондратюк Рита Анатольевна', place:'д/л Янтарный'}],
+ desc:'Лоскутное шитьё собирает целое из ярких кусочков, как мозаика из ткани. Ты сложишь свой узор, сошьёшь блоки и получишь наволочку или прихватку в уютном стиле кантри. Здесь важна точность, а выходит красота.',
+ skills:['Подбирать лоскуты по цвету','Кроить по шаблонам','Сшивать блоки узора','Отутюживать швы','Собирать изделие целиком'],
+ result:'Лоскутная вещь, собранная из твоих ярких квадратиков, — уютная и добрая.'},
+{id:'keramicheskaya-floristika', title:'Керамическая флористика', cat:'Декоративно-прикладное творчество', min:10, cap:10, groups:[{ped:'Ильина Наталья Владимировна', place:'д/л Янтарный'}],
+ desc:'Цветы, которые никогда не завянут, можно сделать из керамики. Ты будешь лепить лепестки тонко и нежно, собирать их в бутоны и целые букеты. Получится сад, который останется с тобой навсегда.',
+ skills:['Раскатывать и лепить лепестки','Собирать цветы из деталей','Подбирать оттенки массы','Составлять керамический букет','Работать с мелкими деталями'],
+ result:'Букет керамических цветов, который не завянет никогда.'},
+{id:'fitodizayn', title:'Фитодизайн. Сухоцветы', cat:'Декоративно-прикладное творчество', min:10, cap:10, groups:[{ped:'Дунаева Елена Николаевна', place:'СЮТ'}],
+ desc:'Природа — лучший художник, а ты — её соавтор. Ты научишься правильно сушить растения и составлять из них картины и композиции. Летние травы превратятся в работы, которые пахнут приключением.',
+ skills:['Собирать и сушить растения','Составлять композиции из сухоцветов','Подбирать фактуры и цвета','Оформлять панно','Заботиться о живых растениях'],
+ result:'Панно или композиция из сухоцветов — частичка летней природы в твоей комнате.'},
+{id:'skrapbuking', title:'Скрапбукинг для начинающих', cat:'Декоративно-прикладное творчество', min:10, cap:10, groups:[{ped:'Задорожная Наталья Петровна', place:'Художественная студия'}],
+ desc:'Самые тёплые воспоминания стоит хранить красиво. Ты будешь оформлять альбомы и открытки: бумага, штампы, вырубка, надписи. Каждая страница — маленькая история, которую приятно листать.',
+ skills:['Компоновать страницы альбома','Работать со скрап-бумагой и штампами','Делать красивые надписи','Складывать открытки своими руками','Сохранять воспоминания красиво'],
+ result:'Авторский альбом или открытка, в которых живут твои лучшие моменты.'},
+{id:'osnovy-izo', title:'Основы изобразительного искусства', cat:'Изобразительное искусство', min:null, cap:10, groups:[{ped:'Мужанова Людмила Бадмаевна', place:'Белая дача'}],
+ desc:'Здесь ты сделаешь первые уверенные шаги в мире рисунка. Постепенно освоишь линию, форму, тон и цвет — от простых упражнений до настоящих композиций. Главное — видеть и не бояться начинать.',
+ skills:['Вести линию уверенно','Строить форму предметов','Передавать тон и объём','Смешивать основные цвета','Составлять законченную композицию'],
+ result:'Поймёшь основы рисунка и живописи и создашь свой первый законченный лист.'},
+{id:'estradnyy-vokal', title:'Эстрадный вокал', cat:'Музыка и сцена', min:12, cap:12, groups:[{ped:'Трададюк Ирина Анатольевна', place:'Белая дача'}],
+ desc:'Твой голос — инструмент, который всегда с тобой. Ты поставишь дыхание, научишься петь в микрофон и держаться на сцене. А ещё — выступишь перед всем Артеком, и это незабываемо.',
+ skills:['Петь с правильным дыханием','Интонировать мелодию','Работать с микрофоном','Разучивать эстрадные хиты','Держаться свободно на сцене'],
+ result:'Сольное или ансамблевое выступление на артековской сцене.'},
+{id:'aviamodelirovanie', title:'Авиамоделирование', cat:'Техника и робототехника', min:10, cap:12, groups:[{ped:'Цюпка Юрий Иванович', place:'Кипарисный'}],
+ desc:'Модель самолёта, которую ты построил сам, реально летает! Ты соберёшь планер или резиномоторную модель и поймёшь, почему крыло держит машину в воздухе. А потом — запуск и первые полёты на поле.',
+ skills:['Читать чертежи модели','Аккуратно собирать каркас','Регулировать модель перед стартом','Понимать основы полёта','Запускать модель и анализировать полёт'],
+ result:'Летающая модель самолёта твоей постройки и первые победы в небе.'},
+{id:'avtodelo', title:'Автодело', cat:'Техника и робототехника', min:13, cap:12, groups:[{ped:'Лысов Владимир Владимирович', place:'д/л Речной, Кувшинка'}],
+ desc:'Как устроен автомобиль и почему он едет? Ты заглянешь под капот, изучишь двигатель, тормоза и электрику, освоишь инструменты настоящего автомеханика. Полезнейшие знания на всю жизнь.',
+ skills:['Понимать устройство автомобиля','Работать слесарным инструментом','Проводить проверку узлов машины','Соблюдать технику безопасности','Разбираться в правилах дорожного движения'],
+ result:'Будешь понимать автомобиль, как настоящий механик, — от колеса до двигателя.'},
+{id:'didzheying', title:'Диджеинг', cat:'Музыка и сцена', min:null, cap:15, groups:[{ped:'Шульженко Юлия Анатольевна', place:'Хрустальный'}],
+ desc:'Диджей — это дирижёр танцпола. Ты научишься сводить треки, делать плавные переходы и читать настроение зала. Твой сет на артековской дискотеке — и толпа танцует под твою музыку.',
+ skills:['Работать с диджейским пультом','Сводить треки по темпу','Ставить бит в такт','Составлять трек-лист','Чувствовать настроение зала'],
+ result:'Свой первый диджей-сет на настоящей артековской дискотеке.'},
+{id:'drony', title:'Дроны: квадрокоптеры и автомодели', cat:'Техника и робототехника', min:10, cap:7, groups:[{ped:'Песегов Анатолий Юрьевич', place:'Белая дача'}],
+ desc:'Дроны — самое современное, что есть в технике. Ты изучишь, как устроен квадрокоптер, научишься его пилотировать и снимать с высоты птичьего полёта. Артек с воздуха выглядит невероятно!',
+ skills:['Пилотировать квадрокоптер','Понимать устройство дрона','Соблюдать правила полётов','Снимать видео с воздуха','Настраивать и обслуживать технику'],
+ result:'Уверенно пилотируешь дрон и увезёшь видео Артека с высоты птичьего полёта.'},
+{id:'shveynoe-masterstvo', title:'Швейное мастерство', cat:'Декоративно-прикладное творчество', min:12, cap:5, groups:[{ped:'Макиенко Сергей Анатольевич', place:'Белая дача'}],
+ desc:'Швейная машинка — надёжный друг мастера. Ты научишься шить на ней уверенно: от прямых строчек до настоящего изделия. Сошьёшь вещь, которую не отличишь от магазинной, — только она лучше, потому что твоя.',
+ skills:['Заправлять и настраивать машинку','Шить прямые и фигурные строчки','Читать простую выкройку','Обрабатывать края изделия','Примерять и доводить до идеала'],
+ result:'Готовое швейное изделие, сшитое тобой на машинке от начала до конца.'},
+{id:'robototehnika-rzhd', title:'Робототехника РЖД', cat:'Техника и робототехника', min:12, cap:14, groups:[{ped:'Репетей Дмитрий Валерьянович', place:'д/л Лесной, Павильон РЖД'}],
+ desc:'Роботы уже работают на железных дорогах — а ты соберёшь своего первого. Ты построишь и запрограммируешь робота, который движется по маршруту и выполняет задания. Инженер в тебе проснётся сразу.',
+ skills:['Собирать робота из конструктора','Программировать движения','Работать с датчиками','Отлаживать программы','Работать в инженерной команде'],
+ result:'Запрограммированный тобой робот, который сам проходит испытательный маршрут.'},
+{id:'3d-modelirovanie', title:'3D-моделирование', cat:'Техника и робототехника', min:12, cap:8, groups:[{ped:'Репетей Дмитрий Валерьянович', place:'Белая Дача'}],
+ desc:'Любую идею можно превратить в точную 3D-модель. Ты научишься строить объекты в специальной программе и увидишь, как они выглядят в объёме. От фантазии до цифровой фигуры — один курс.',
+ skills:['Работать в программе 3D-моделирования','Строить объёмные фигуры','Думать в трёх измерениях','Готовить модель к печати','Вносить правки в макет'],
+ result:'Твои собственные 3D-модели — готовые к печати на 3D-принтере.'},
+{id:'kibersport-dota2', title:'Киберспорт. MOBA (Dota 2)', cat:'Техника и робототехника', min:12, cap:10, groups:[{ped:'Павлов Игорь Константинович', place:'Белая Дача'}],
+ desc:'Киберспорт — это дисциплина, тактика и командная игра. Ты разучишь роли, стратегии и командные взаимодействия, будешь разбирать свои матчи. Играть можно по-разному — в киберспорте побеждает команда.',
+ skills:['Понимать роли и тактики MOBA','Играть слаженно в команде','Анализировать свои матчи','Держать концентрацию','Уважать соперника'],
+ result:'Опыт настоящих командных турниров и уверенная командная игра.'},
+{id:'robototehnika-vex', title:'Робототехника VEX Robotics', cat:'Техника и робототехника', min:10, cap:12, groups:[{ped:'Милованова Виктория Викторовна', place:'Белая Дача'}],
+ desc:'VEX Robotics — конструктор, из которого рождаются настоящие соревновательные роботы. Ты соберёшь машину для игры-соревнования, запрограммируешь её и будешь состязаться с другими командами.',
+ skills:['Собирать робота из деталей VEX','Программировать автономные режимы','Управлять роботом на поле','Настраивать механизмы','Сражаться в командных матчах'],
+ result:'Робот команды VEX и настоящие соревновательные матчи в твоём активе.'},
+{id:'fotovidenie', title:'Фотовидение', cat:'Медиа и фото', min:12, cap:10, groups:[{ped:'Шурай Анастасия', place:'д/л Янтарный'},{ped:'Хлевицкий Николай Владимирович', place:'д/л Хрустальный'}],
+ desc:'Фотоохота по Артеку начинается! Ты научишься выстраивать кадр, ловить свет и эмоции, снимать репортажи и портреты. Твои снимки попадут в артековские газеты и на большие экраны.',
+ skills:['Выстраивать кадр по правилам композиции','Работать со светом','Снимать портрет и репортаж','Обрабатывать фотографии','Вести фоторассказ'],
+ result:'Серия снимков, опубликованных в артековских медиа, — твоё фотопортфолио.'},
+{id:'foto-video-montazh', title:'Фото- и видеомонтаж', cat:'Медиа и фото', min:12, cap:10, groups:[{ped:'Климчук Евгений', place:'Белая дача'}],
+ desc:'Снять — полдела, смонтировать — вторая половина. Ты научишься собирать видео: склейка, музыка, титры, эффекты. Твой первый короткометражный ролик покажут на артековском экране.',
+ skills:['Монтировать видео в редакторе','Подбирать музыку к ролику','Делать титры и переходы','Обрабатывать фотографии','Рассказывать историю за минуту'],
+ result:'Смонтированный тобой ролик, который увидит весь Артек.'},
+{id:'oratorskoe-iskusstvo', title:'Ораторское искусство', cat:'Слово и речь', min:12, cap:12, groups:[{ped:'Колесникова Александра Михайловна', place:'Белая дача'}],
+ desc:'Говорить так, чтобы слушали, — искусство, которому можно научиться. Ты поставишь голос и дыхание, разучишь ясные и сильные речи, будешь держать внимание зала. Слово становится силой.',
+ skills:['Поставить голос и дыхание','Писать яркие речи','Держать внимание аудитории','Уверенно отвечать на вопросы','Выступать без бумажки'],
+ result:'Твоё публичное выступление, после которого тебе будут аплодировать.'},
+{id:'muzykalnyy-teatr', title:'Музыкальный театр', cat:'Музыка и сцена', min:null, cap:15, groups:[{ped:'Михеева Мария Сергеевна', place:'Белая Дача'}],
+ desc:'Пение, танец, актёрская игра — всё соединяется в музыкальном спектакле. Ты окажешься за кулисами настоящего театра: репетиции, мизансцены, костюмы. А потом — премьера и аплодисменты до упора.',
+ skills:['Петь в спектакле','Работать в мизансцене','Слушать режиссёра и партнёров','Двигаться на сцене','Перевоплощаться в героя'],
+ result:'Роль в музыкальном спектакле, показанном на артековской сцене.'},
+{id:'arheologiya', title:'Археология', cat:'Наука и природа', min:null, cap:15, groups:[{ped:'Крамаренко Елена Игоревна', place:'д/л Янтарный'}],
+ desc:'Археологи читают историю по черепкам и монетам. Ты попробуешь себя в раскопках: расчистишь находку, определишь её возраст, сделаешь запись в полевом дневнике. Каждая находка — тайна, которую ты раскроешь.',
+ skills:['Проводить раскопки аккуратно','Определять находки','Работать археологическими инструментами','Вести полевую документацию','Рассказывать об истории вещей'],
+ result:'Опыт настоящих раскопок и находки, о которых есть что рассказать.'},
+{id:'eko-artek', title:'Эко-Артек', cat:'Наука и природа', min:null, cap:15, groups:[{ped:'Ващилина Анастасия', place:'Белая дача'}],
+ desc:'Артек — это и парк, и море, и тысячи растений. Ты изучишь природу лагеря, понаблюдаешь за птицами и обитателями моря, проведёшь настоящие экологические исследования. Природа станет твоим классом.',
+ skills:['Наблюдать за живой природой','Определять растения и птиц','Проводить экологические исследования','Бережно относиться к природе','Предлагать эко-идеи'],
+ result:'Твоё экологическое исследование и новый взгляд на природу вокруг.'},
+{id:'poeziya-v-arteka', title:'Поэзия в Артеке', cat:'Слово и речь', min:12, cap:10, groups:[{ped:'Добророднов Максим Александрович', place:'Белая дача'}],
+ desc:'Море, горы и дружба рифмуются легко. Ты будешь читать классиков и писать своё: рифмы, ритмы, образы. Твои стихи могут зазвучать со сцены и остаться в артековском сборнике.',
+ skills:['Чувствовать ритм и рифму','Писать свои стихи','Выразительно читать со сцены','Разбирать любимые стихотворения','Участвовать в поэтических вечерах'],
+ result:'Твои стихи в артековском сборнике и выступление на поэтическом вечере.'},
+{id:'kosmicheskoe-puteshestvie', title:'Моё космическое путешествие', cat:'Наука и природа', min:null, cap:10, groups:[{ped:'Боброва Кристина Владимировна', place:'д/л «Кипарисный»'},{ped:'Понкратова Александра Вячеславовна', place:'д/л «Речной»'},{ped:'Черных Елена Олеговна', place:'д/л «Хрустальный»'}],
+ desc:'Готовься к полёту: впереди — вся Солнечная система! Ты будешь строить ракеты и станции, готовиться к «старту» и узнавать, как живут космонавты на орбите. Космос ближе, чем ты думаешь.',
+ skills:['Узнавать планеты Солнечной системы','Строить модели ракет и станций','Понимать, как живут на орбите','Работать в экипаже','Фантазировать о будущем космоса'],
+ result:'Своё космическое путешествие — с экипажем, миссией и открытиями.'},
+{id:'artekovskoe-pismo', title:'Артековское письмо', cat:'Слово и речь', min:10, cap:15, groups:[{ped:'Шевченко Оксана Викторовна', place:'Почта «Артека»'}],
+ desc:'Письмо, написанное от руки, согревает больше, чем любое сообщение. Ты будешь писать настоящие бумажные письма друзьям и родным, оформлять конверты и отправлять их через Почту Артека. Ждёшь ответа? Обязательно дождёшься!',
+ skills:['Писать бумажные письма','Оформлять конверты и открытки','Придумывать тёплые слова','Знать историю почты Артека','Получать и дарить ответы'],
+ result:'Твои письма уедут по всему миру, а ответы придут на Почту Артека.'}
+];
+
+/* ============================================================
+   СПРАВОЧНИКИ
+   ============================================================ */
+const CAT2DIR = {
+  'Слово и речь':'Художественная',
+  'Декоративно-прикладное творчество':'Художественная',
+  'Изобразительное искусство':'Художественная',
+  'Музыка и сцена':'Художественная',
+  'Медиа и фото':'Художественная',
+  'Техника и робототехника':'Техническая',
+  'Наука и природа':'Естественно-научная',
+  'Спорт и здоровье':'Физкультурно-спортивная'
+};
+const CATEGORY_ACCENTS = {
+  'Изобразительное искусство':{c:'#0057B8'},
+  'Декоративно-прикладное творчество':{c:'#FF7A00'},
+  'Музыка и сцена':{c:'#E63946'},
+  'Техника и робототехника':{c:'#1d1d1f'},
+  'Слово и речь':{c:'#0057B8', g:'linear-gradient(90deg,#0057B8,#FF7A00)'},
+  'Наука и природа':{c:'#0057B8', g:'linear-gradient(90deg,#0057B8,#E63946)'},
+  'Медиа и фото':{c:'#FF7A00', g:'linear-gradient(90deg,#FF7A00,#E63946)'},
+  'Спорт и здоровье':{c:'#E63946', g:'linear-gradient(135deg,#E63946 0%,#E63946 50%,#0057B8 50%,#0057B8 100%)'}
+};
+const DIRECTION_ACCENTS = {
+  'Художественная':{c:'#FF7A00', g:'linear-gradient(135deg,#FF7A00,#E63946)'},
+  'Техническая':{c:'#0057B8'},
+  'Естественно-научная':{c:'#0057B8', g:'linear-gradient(135deg,#0057B8,#E63946)'},
+  'Физкультурно-спортивная':{c:'#E63946', g:'linear-gradient(135deg,#E63946,#FF7A00)'}
+};
+const DIRS = ['Художественная','Техническая','Естественно-научная','Физкультурно-спортивная'];
+
+/* ============================================================
+   УТИЛИТЫ
+   ============================================================ */
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clampN = (v,a,b) => Math.min(b, Math.max(a, v));
+const byId = id => STUDIOS.find(s => s.id === id);
+function plural(n, one, few, many){
+  const m10 = n % 10, m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return one;
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
+  return many;
+}
+function cleanText(t){
+  return String(t || '').replace(/\u00A0/g,' ').split('\n').map(x => x.trim()).filter(Boolean).join(' ').trim();
+}
+
+/* --- localStorage с деградацией --- */
+let lsOK = true;
+try { localStorage.setItem('__artek_t','1'); localStorage.removeItem('__artek_t'); } catch(e){ lsOK = false; }
+const store = {
+  get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
+  set(k,v){ try { localStorage.setItem(k,v); return true; } catch(e){ return false; } }
+};
+const memPhotos = {};
+
+function getPhotos(id){
+  if (!lsOK){ if (!memPhotos[id]) memPhotos[id] = [null,null,null]; return memPhotos[id].slice(); }
+  try {
+    const raw = localStorage.getItem('photos_' + id);
+    const a = raw ? JSON.parse(raw) : [null,null,null];
+    if (!Array.isArray(a)) return [null,null,null];
+    return [a[0] || null, a[1] || null, a[2] || null];
+  } catch(e){ return [null,null,null]; }
+}
+function setPhotos(id, arr){
+  if (!lsOK){ memPhotos[id] = arr.slice(); return false; }
+  try { localStorage.setItem('photos_' + id, JSON.stringify(arr)); return true; }
+  catch(e){ memPhotos[id] = arr.slice(); return false; }
+}
+function getEdit(id){
+  try {
+    const raw = store.get('edit_' + id);
+    if (!raw) return null;
+    const o = JSON.parse(raw);
+    return (o && typeof o === 'object') ? o : null;
+  } catch(e){ return null; }
+}
+
+/* ============================================================
+   СОСТОЯНИЕ
+   ============================================================ */
+let age = null;
+let activeScreen = '';
+let currentId = null;
+let currentEdit = null;
+let editMode = false;
+let listScroll = 0;
+const filters = { dir:'all', q:'', hideF1:false };
+let slotState = [{type:'empty'},{type:'empty'},{type:'empty'}];
+let slotToken = 0;
+
+/* ============================================================
+   DOM
+   ============================================================ */
+const frame = $('#frame');
+const ageInput = $('#ageInput');
+const ageNext = $('#ageNext');
+const ageError = $('#ageError');
+const ageErrorText = $('#ageErrorText');
+const ageChips = $('#ageChips');
+const listCounter = $('#listCounter');
+const listScrollEl = $('#listScroll');
+const groupsEl = $('#studioGroups');
+const dirChips = $('#dirChips');
+const searchInput = $('#searchInput');
+const hideF1El = $('#hideF1');
+const changeAgeBtn = $('#changeAgeBtn');
+const studioRoot = $('#studioRoot');
+const photoCol = $('#photoCol');
+const backBtn = $('#backBtn');
+const stTitle = $('#stTitle'), stCat = $('#stCat'), stF1 = $('#stF1');
+const stAge = $('#stAge'), stCap = $('#stCap');
+const stGroups = $('#stGroups'), stDesc = $('#stDesc');
+const stSkills = $('#stSkills'), stResult = $('#stResult');
+const editPanel = $('#editPanel'), accentSelect = $('#accentSelect'), editDone = $('#editDone');
+const degradeBadge = $('#degradeBadge');
+const printBtn = $('#printBtn');
+const cropOverlay = $('#cropOverlay'), cropArea = $('#cropArea'), cropStage = $('#cropStage');
+const cropImg = $('#cropImg'), cropSel = $('#cropSel');
+const cropApply = $('#cropApply'), cropCancel = $('#cropCancel');
+const toastEl = $('#toast');
+const filePick = $('#filePick');
+
+/* ============================================================
+   ТОСТ
+   ============================================================ */
+let toastTimer = null;
+function toast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2600);
+}
+
+/* ============================================================
+   ПЕРЕКЛЮЧЕНИЕ ЭКРАНОВ
+   ============================================================ */
+function showScreen(id, dir = 1, instant = false){
+  if (id === activeScreen) return;
+  const cur = document.getElementById(activeScreen);
+  const next = document.getElementById(id);
+  if (cur) cur.classList.remove('active');
+  next.style.setProperty('--sx', dir >= 0 ? '26px' : '-26px');
+  if (instant) next.classList.add('no-anim');
+  void next.offsetWidth;
+  next.classList.add('active');
+  activeScreen = id;
+  if (instant){
+    requestAnimationFrame(() => requestAnimationFrame(() => next.classList.remove('no-anim')));
+  }
+  if (id === 'screen-list'){
+    requestAnimationFrame(() => { listScrollEl.scrollTop = listScroll; });
+  }
+  if (id === 'screen-age'){
+    setTimeout(() => ageInput.focus({preventScroll:true}), instant ? 0 : 200);
+  }
+}
+
+/* #7 — управление фокусом при переходах между экранами */
+function focusCard(id){
+  let card = id ? groupsEl.querySelector('.card[data-id="' + id + '"]') : null;
+  if (!card) card = groupsEl.querySelector('.card');
+  if (card) card.focus({preventScroll: false});
+}
+function focusTitle(){
+  if (!stTitle.hasAttribute('tabindex')) stTitle.setAttribute('tabindex', '-1');
+  stTitle.focus({preventScroll: true});
+}
+
+/* ============================================================
+   ЭКРАН 1 · ВОЗРАСТ
+   ============================================================ */
+function showAgeError(msg){
+  ageErrorText.textContent = msg;
+  ageError.hidden = false;
+  // #1 — возвращаем фокус в поле, если пользователь кликал кнопку мышью
+  ageInput.focus({preventScroll: true});
+}
+function hideAgeError(){ ageError.hidden = true; }
+
+function submitAge(){
+  const v = ageInput.value.trim();
+  if (!v){ showAgeError('Напиши, сколько тебе лет — от 8 до 17'); return; }
+  if (!/^\d+$/.test(v)){ showAgeError('Здесь должно быть число от 8 до 17'); return; }
+  const n = parseInt(v, 10);
+  if (n < 8 || n > 17){ showAgeError('Артек ждёт ребят от 8 до 17 лет'); return; }
+  hideAgeError();
+  const changed = age !== n;
+  age = n;
+  store.set('artek_age', String(n));
+  renderList();
+  if (changed) listScroll = 0;
+  showScreen('screen-list', 1);
+  // #7 — после перехода в каталог ставим фокус на первую карточку
+  requestAnimationFrame(() => {
+    const first = groupsEl.querySelector('.card');
+    if (first) first.focus({preventScroll: true});
+  });
+}
+ageNext.addEventListener('click', submitAge);
+// #1 — Enter в поле возраста отправляет форму
+ageInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter'){ e.preventDefault(); submitAge(); }
+});
+ageInput.addEventListener('input', hideAgeError);
+
+// #10 — чипы возраста: aria-pressed + корректная работа Enter (native button)
+for (let a = 8; a <= 17; a++){
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'age-chip'; b.textContent = a;
+  b.setAttribute('aria-label', 'Мне ' + a + ' ' + plural(a,'год','года','лет'));
+  b.setAttribute('aria-pressed', 'false');
+  b.addEventListener('click', () => {
+    ageInput.value = String(a);
+    hideAgeError();
+    $$('.age-chip').forEach(c => {
+      const isSel = c === b;
+      c.classList.toggle('sel', isSel);
+      c.setAttribute('aria-pressed', isSel ? 'true' : 'false');
+    });
+    ageInput.focus({preventScroll:true});
+  });
+  ageChips.appendChild(b);
+}
+
+changeAgeBtn.addEventListener('click', () => {
+  ageInput.value = age != null ? String(age) : '';
+  // #10 — синхронизируем aria-pressed при возврате на экран возраста
+  $$('.age-chip').forEach(c => {
+    const isSel = age != null && +c.textContent === age;
+    c.classList.toggle('sel', isSel);
+    c.setAttribute('aria-pressed', isSel ? 'true' : 'false');
+  });
+  showScreen('screen-age', -1);
+});
+
+/* ============================================================
+   ЭКРАН 2 · СПИСОК
+   ============================================================ */
+function passFilters(s){
+  if (s.min != null && age != null && age < s.min) return false;
+  if (filters.hideF1 && s.f === 'F1') return false;
+  if (filters.dir !== 'all' && CAT2DIR[s.cat] !== filters.dir) return false;
+  // #9 — поиск по названию, категории, педагогам и площадкам
+  if (filters.q){
+    const q = filters.q.toLowerCase();
+    const haystack = (
+      s.title + ' ' +
+      s.cat + ' ' +
+      s.groups.map(g => g.ped + ' ' + g.place).join(' ')
+    ).toLowerCase();
+    if (!haystack.includes(q)) return false;
+  }
+  return true;
+}
+function accVars(cat){
+  const a = CATEGORY_ACCENTS[cat] || {c:'#0057B8'};
+  return '--acc-c:' + a.c + ';--acc-g:' + (a.g || a.c);
+}
+function cardHTML(s){
+  const badges =
+    (s.min != null ? '<span class="badge age">' + s.min + '+</span>' : '') +
+    (s.f === 'F1' ? '<span class="badge f1">F1</span>' : '');
+  const peds = s.groups.map(g => g.ped).join(', ');
+  const places = Array.from(new Set(s.groups.map(g => g.place))).join(', ');
+  return '<article class="card" tabindex="0" role="button" data-id="' + s.id + '" style="' + accVars(s.cat) + '" aria-label="Открыть презентацию студии «' + esc(s.title) + '»">' +
+    '<h4>' + esc(s.title) + '</h4>' +
+    '<div class="badges">' + badges + '</div>' +
+    '<p class="card-cat"><span class="cat-dot"></span>' + esc(s.cat) + '</p>' +
+    '<p class="card-meta">до ' + s.cap + ' мест в группе</p>' +
+    '<p class="card-peds">' + esc(peds) + '</p>' +
+    '<p class="card-places">' + esc(places) + '</p>' +
+  '</article>';
+}
+function renderList(){
+  if (age == null) return;
+  const ageFit = STUDIOS.filter(s => s.min == null || age >= s.min);
+  const vis = ageFit.filter(passFilters);
+  listCounter.innerHTML =
+    'Для ' + age + ' лет ' + plural(ageFit.length,'доступна','доступны','доступно') +
+    ' <b>' + ageFit.length + '</b> ' + plural(ageFit.length,'студия','студии','студий') +
+    (vis.length < ageFit.length ? ' <span class="counter-sub">· показано: ' + vis.length + '</span>' : '');
+  let html = '';
+  for (const d of DIRS){
+    const items = vis.filter(s => CAT2DIR[s.cat] === d);
+    if (!items.length) continue;
+    html += '<section class="dir-sec"><div class="dir-head"><h3>' + esc(d) + ' направленность</h3>' +
+      '<span class="dir-count">' + items.length + ' ' + plural(items.length,'студия','студии','студий') + '</span>' +
+      '<span class="dir-line"></span></div>' +
+      '<div class="cards-grid">' + items.map(cardHTML).join('') + '</div></section>';
+  }
+  if (!html) html = '<p style="padding:30px 4px;color:rgba(29,29,31,.5);font-size:14px">Ничего не нашлось — попробуй изменить фильтры или поиск.</p>';
+  groupsEl.innerHTML = html;
+}
+groupsEl.addEventListener('click', e => {
+  const c = e.target.closest('.card');
+  if (c) openStudio(c.dataset.id);
+});
+groupsEl.addEventListener('keydown', e => {
+  const c = e.target.closest('.card');
+  if (c && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); openStudio(c.dataset.id); }
+});
+const DIR_CHIPS = [['all','Все'],['Художественная','Художественная'],['Техническая','Техническая'],['Естественно-научная','Естественно-научная'],['Физкультурно-спортивная','Физкультурно-спортивная']];
+DIR_CHIPS.forEach(([val, label]) => {
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'chip' + (val === 'all' ? ' on' : '');
+  b.textContent = label; b.dataset.dir = val;
+  b.addEventListener('click', () => {
+    filters.dir = val;
+    $$('#dirChips .chip').forEach(c => c.classList.toggle('on', c === b));
+    renderList();
+  });
+  dirChips.appendChild(b);
+});
+let searchTimer = null;
+searchInput.addEventListener('input', () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => { filters.q = searchInput.value.trim(); renderList(); }, 140);
+});
+hideF1El.addEventListener('change', () => { filters.hideF1 = hideF1El.checked; renderList(); });
+listScrollEl.addEventListener('scroll', () => {
+  if (activeScreen === 'screen-list') listScroll = listScrollEl.scrollTop;
+}, {passive:true});
+
+/* ============================================================
+   ЭКРАН 3 · ПРЕЗЕНТАЦИЯ
+   ============================================================ */
+function baseEdit(s){
+  return {
+    title: s.title,
+    catLabel: s.cat,
+    ageLabel: s.min == null ? '8–17 лет' : 'от ' + s.min + ' лет',
+    capLabel: 'до ' + s.cap + ' мест в группе',
+    desc: s.desc,
+    skills: s.skills.slice(),
+    result: s.result,
+    groups: s.groups.map(g => ({ped:g.ped, place:g.place})),
+    accentType: null
+  };
+}
+function mergeEdit(base, ed){
+  if (!ed) return base;
+  ['title','catLabel','ageLabel','capLabel','desc','result'].forEach(k => {
+    if (typeof ed[k] === 'string') base[k] = ed[k];
+  });
+  // #2 — заменяем массивы целиком, чтобы добавленные навыки/группы не терялись
+  if (Array.isArray(ed.skills)){
+    const cleaned = ed.skills.filter(s => typeof s === 'string' && s.trim() !== '');
+    base.skills = cleaned;
+  }
+  if (Array.isArray(ed.groups)){
+    const cleaned = ed.groups.filter(g => g && typeof g === 'object' && (g.ped || g.place));
+    base.groups = cleaned;
+  }
+  if (typeof ed.accentType === 'string' && DIRECTION_ACCENTS[ed.accentType]) base.accentType = ed.accentType;
+  return base;
+}
+function applyAccent(){
+  const t = currentEdit && currentEdit.accentType;
+  const s = byId(currentId);
+  const acc = (t && DIRECTION_ACCENTS[t]) ? DIRECTION_ACCENTS[t] : (CATEGORY_ACCENTS[s.cat] || {c:'#0057B8'});
+  studioRoot.style.setProperty('--acc-c', acc.c);
+  studioRoot.style.setProperty('--acc-g', acc.g || acc.c);
+}
+function renderStudio(s){
+  currentEdit = mergeEdit(baseEdit(s), getEdit(s.id));
+  applyAccent();
+  stTitle.textContent = currentEdit.title;
+  stCat.textContent = currentEdit.catLabel;
+  stAge.textContent = currentEdit.ageLabel;
+  stCap.textContent = currentEdit.capLabel;
+  stDesc.textContent = currentEdit.desc;
+  stSkills.innerHTML = currentEdit.skills.map(sk => '<li>' + esc(sk) + '</li>').join('');
+  stResult.textContent = currentEdit.result;
+  stGroups.innerHTML = currentEdit.groups.map((g,i) =>
+    '<p class="st-group"><span class="g-ped" data-gi="' + i + '">' + esc(g.ped) + '</span>' +
+    '<span class="sep">·</span>' +
+    '<span class="g-place" data-gi="' + i + '">' + esc(g.place) + '</span></p>'
+  ).join('');
+  stF1.hidden = s.f !== 'F1';
+}
+
+/* ---------- фотоблок ---------- */
+function buildSlots(){
+  for (let i = 0; i < 3; i++){
+    const slot = document.createElement('div');
+    slot.className = 'photo-slot'; slot.dataset.slot = i;
+    slot.innerHTML =
+      '<img alt="Фото студии, слот ' + (i+1) + '" hidden>' +
+      '<div class="slot-empty" role="button" tabindex="0" aria-label="Слот ' + (i+1) + ': загрузить фото">' +
+        '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-4.5-4.5L7 20"/></svg>' +
+        '<span class="slot-txt">Перетащите фото или нажмите</span>' +
+      '</div>' +
+      '<button class="slot-del print-hide" type="button" aria-label="Удалить фото" hidden>×</button>';
+    photoCol.appendChild(slot);
+
+    const empty = slot.querySelector('.slot-empty');
+    empty.addEventListener('click', () => { if (slotState[i].type === 'empty') pickFile(i); });
+    empty.addEventListener('keydown', e => {
+      if ((e.key === 'Enter' || e.key === ' ') && slotState[i].type === 'empty'){ e.preventDefault(); pickFile(i); }
+    });
+    slot.querySelector('.slot-del').addEventListener('click', () => deletePhoto(i));
+
+    slot.addEventListener('dragover', e => { e.preventDefault(); slot.classList.add('dragover'); });
+    slot.addEventListener('dragleave', () => slot.classList.remove('dragover'));
+    slot.addEventListener('drop', e => {
+      e.preventDefault();
+      slot.classList.remove('dragover');
+      const f = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (!f) return;
+      if (!f.type.startsWith('image/')){ toast('Это не изображение'); return; }
+      if (slotState[i].type === 'file'){ toast('Фото из каталога нельзя заменить'); return; }
+      cropOpen(f, i);
+    });
+  }
+}
+const fileCache = {};
+function checkFile(src){
+  return new Promise(res => {
+    if (src in fileCache) return res(fileCache[src]);
+    const im = new Image();
+    im.onload = () => { fileCache[src] = true; res(true); };
+    im.onerror = () => { fileCache[src] = false; res(false); };
+    im.src = src;
+  });
+}
+async function resolveSlot(id, n){
+  const cands = ['Images/' + id + '-' + n + '.jpg'];
+  if (n === 1) cands.push('Images/' + id + '.jpg');
+  for (const src of cands){ if (await checkFile(src)) return {type:'file', src}; }
+  const du = getPhotos(id)[n-1];
+  if (du) return {type:'local', src:du};
+  return {type:'empty'};
+}
+async function loadSlots(){
+  const token = ++slotToken;
+  for (let i = 0; i < 3; i++){
+    const r = await resolveSlot(currentId, i+1);
+    if (token !== slotToken) return;
+    slotState[i] = r;
+    paintSlot(i);
+  }
+}
+function paintSlot(i){
+  const slot = photoCol.querySelector('.photo-slot[data-slot="' + i + '"]');
+  if (!slot) return;
+  const st = slotState[i];
+  const img = slot.querySelector('img');
+  const empty = slot.querySelector('.slot-empty');
+  const del = slot.querySelector('.slot-del');
+  slot.classList.toggle('has-img', st.type !== 'empty');
+  if (st.type === 'empty'){
+    img.removeAttribute('src');
+    img.hidden = true;
+    empty.hidden = false;
+  } else {
+    empty.hidden = true;
+    img.hidden = false;
+    img.onerror = () => {
+      if (st.type === 'local'){
+        const a = getPhotos(currentId);
+        a[i] = null;
+        setPhotos(currentId, a);
+        slotState[i] = {type:'empty'};
+        paintSlot(i);
+      }
+    };
+    img.src = st.src;
+  }
+  del.hidden = !(editMode && st.type === 'local');
+}
+function refreshDelButtons(){
+  for (let i = 0; i < 3; i++) paintSlot(i);
+}
+function pickFile(i){
+  filePick.value = '';
+  filePick.dataset.slot = i;
+  filePick.click();
+}
+filePick.addEventListener('change', () => {
+  const f = filePick.files && filePick.files[0];
+  if (!f) return;
+  if (!f.type.startsWith('image/')){ toast('Это не изображение'); return; }
+  cropOpen(f, parseInt(filePick.dataset.slot, 10) || 0);
+});
+function deletePhoto(i){
+  const a = getPhotos(currentId);
+  a[i] = null;
+  setPhotos(currentId, a);
+  slotState[i] = {type:'empty'};
+  paintSlot(i);
+  toast('Фото удалено');
+}
+
+/* ---------- открытие / возврат ---------- */
+function openStudio(id){
+  currentId = id;
+  editMode = false;
+  frame.classList.remove('editing');
+  editPanel.hidden = true;
+  setEditable(false);
+  renderStudio(byId(id));
+  showScreen('screen-studio', 1);
+  loadSlots();
+  // #7 — фокус на заголовок новой студии
+  requestAnimationFrame(() => focusTitle());
+}
+backBtn.addEventListener('click', () => {
+  const fromId = currentId;
+  if (editMode){
+    exitEditMode(false);
+    toast('Изменения не сохранены');
+  }
+  showScreen('screen-list', -1);
+  // #7 — фокус на карточку, из которой пришли
+  requestAnimationFrame(() => focusCard(fromId));
+});
+
+/* ============================================================
+   РЕЖИМ РЕДАКТИРОВАНИЯ
+   ============================================================ */
+function setEditable(on){
+  $$('#screen-studio [data-field]').forEach(el => {
+    el.contentEditable = on ? 'true' : 'false';
+    el.spellcheck = false;
+  });
+  $$('#stSkills li').forEach(li => { li.contentEditable = on ? 'true' : 'false'; li.spellcheck = false; });
+  $$('#stGroups .g-ped, #stGroups .g-place').forEach(el => { el.contentEditable = on ? 'true' : 'false'; el.spellcheck = false; });
+}
+function enterEditMode(){
+  editMode = true;
+  frame.classList.add('editing');
+  editPanel.hidden = false;
+  accentSelect.value = currentEdit.accentType || '';
+  setEditable(true);
+  refreshDelButtons();
+}
+function collectEdits(){
+  const v = el => cleanText(el.innerText);
+  return {
+    title: v(stTitle),
+    catLabel: v(stCat),
+    ageLabel: v(stAge),
+    capLabel: v(stCap),
+    desc: v(stDesc),
+    skills: Array.from(stSkills.children).map(li => cleanText(li.innerText)),
+    result: v(stResult),
+    groups: Array.from(stGroups.querySelectorAll('.st-group')).map(row => ({
+      ped: cleanText(row.querySelector('.g-ped').innerText),
+      place: cleanText(row.querySelector('.g-place').innerText)
+    })),
+    accentType: accentSelect.value || null
+  };
+}
+function exitEditMode(save){
+  if (save && currentId){
+    const obj = collectEdits();
+    store.set('edit_' + currentId, JSON.stringify(obj));
+    currentEdit = obj;
+    applyAccent();
+    toast('Изменения сохранены');
+  }
+  editMode = false;
+  frame.classList.remove('editing');
+  editPanel.hidden = true;
+  setEditable(false);
+  refreshDelButtons();
+}
+editDone.addEventListener('click', () => exitEditMode(true));
+accentSelect.addEventListener('change', () => {
+  if (!editMode) return;
+  currentEdit.accentType = accentSelect.value || null;
+  applyAccent();
+});
+document.addEventListener('paste', e => {
+  if (!editMode) return;
+  const t = e.clipboardData && e.clipboardData.getData('text/plain');
+  if (t && e.target.closest && e.target.closest('#screen-studio [contenteditable="true"]')){
+    e.preventDefault();
+    document.execCommand('insertText', false, t);
+  }
+});
+
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && (e.code === 'KeyQ' || (e.key || '').toLowerCase() === 'q')){
+    if (activeScreen === 'screen-studio'){
+      e.preventDefault();
+      if (editMode) exitEditMode(true); else enterEditMode();
+    }
+    return;
+  }
+  if (!cropOverlay.hidden){
+    if (e.key === 'Escape'){ e.preventDefault(); closeCrop(); }
+    else if (e.key === 'Enter'){ e.preventDefault(); applyCrop(); }
+  }
+});
+
+/* ============================================================
+   КАДРИРОВАНИЕ 16:9
+   ============================================================ */
+let dispW = 0, dispH = 0, natW = 0, natH = 0, cropSlot = 0;
+const sel = {x:0, y:0, w:0, h:0};
+let drag = null;
+
+function paintSel(){
+  cropSel.style.left = sel.x + 'px';
+  cropSel.style.top = sel.y + 'px';
+  cropSel.style.width = sel.w + 'px';
+  cropSel.style.height = sel.h + 'px';
+}
+function initSelection(){
+  const AR = 16/9;
+  if (dispW / dispH >= AR){
+    const h = dispH, w = h * AR;
+    Object.assign(sel, {x:(dispW - w)/2, y:0, w, h});
+  } else {
+    const w = dispW, h = w / AR;
+    Object.assign(sel, {x:0, y:(dispH - h)/2, w, h});
+  }
+  paintSel();
+}
+function resizeSel(handle, px, py){
+  const AR = 16/9, MINW = 60;
+  const hasN = handle.includes('n'), hasS = handle.includes('s');
+  const hasW = handle.includes('w'), hasE = handle.includes('e');
+  const ax = hasW ? sel.x + sel.w : hasE ? sel.x : sel.x + sel.w/2;
+  const ay = hasN ? sel.y + sel.h : hasS ? sel.y : sel.y + sel.h/2;
+  let w = (hasW || hasE) ? Math.abs(px - ax) : Math.abs(py - ay) * AR;
+  const maxWside = hasW ? ax : hasE ? (dispW - ax) : 2 * Math.min(ax, dispW - ax);
+  const maxHside = hasN ? ay : hasS ? (dispH - ay) : 2 * Math.min(ay, dispH - ay);
+  const maxW = Math.min(maxWside, maxHside * AR);
+  w = clampN(w, MINW, Math.max(MINW, maxW));
+  const h = w / AR;
+  sel.w = w; sel.h = h;
+  sel.x = clampN(hasW ? ax - w : hasE ? ax : ax - w/2, 0, dispW - w);
+  sel.y = clampN(hasN ? ay - h : hasS ? ay : ay - h/2, 0, dispH - h);
+  paintSel();
+}
+cropSel.addEventListener('pointerdown', e => {
+  const hEl = e.target.closest('.h');
+  drag = {mode: hEl ? 'resize' : 'move', handle: hEl ? hEl.dataset.h : null, sx: e.clientX, sy: e.clientY, sel0: {...sel}};
+  cropSel.setPointerCapture(e.pointerId);
+  e.preventDefault();
+});
+cropSel.addEventListener('pointermove', e => {
+  if (!drag) return;
+  if (drag.mode === 'move'){
+    sel.x = clampN(drag.sel0.x + (e.clientX - drag.sx), 0, dispW - drag.sel0.w);
+    sel.y = clampN(drag.sel0.y + (e.clientY - drag.sy), 0, dispH - drag.sel0.h);
+    paintSel();
+  } else {
+    const r = cropStage.getBoundingClientRect();
+    resizeSel(drag.handle, e.clientX - r.left, e.clientY - r.top);
+  }
+});
+cropSel.addEventListener('pointerup', () => { drag = null; });
+cropSel.addEventListener('pointercancel', () => { drag = null; });
+
+function cropOpen(file, slot){
+  cropSlot = slot;
+  const fr = new FileReader();
+  fr.onload = () => {
+    const im = new Image();
+    im.onload = () => {
+      natW = im.naturalWidth; natH = im.naturalHeight;
+      cropOverlay.hidden = false;
+      const maxW = cropArea.clientWidth - 8, maxH = cropArea.clientHeight - 8;
+      const scale = Math.min(maxW / natW, maxH / natH, 2.5);
+      dispW = Math.max(60, Math.round(natW * scale));
+      dispH = Math.max(60, Math.round(natH * scale));
+      cropImg.src = fr.result;
+      cropImg.style.width = dispW + 'px';
+      cropImg.style.height = dispH + 'px';
+      initSelection();
+    };
+    im.onerror = () => toast('Не удалось открыть изображение');
+    im.src = fr.result;
+  };
+  fr.readAsDataURL(file);
+}
+function closeCrop(){ cropOverlay.hidden = true; }
+cropCancel.addEventListener('click', closeCrop);
+cropOverlay.addEventListener('click', e => { if (e.target === cropOverlay) closeCrop(); });
+
+function applyCrop(){
+  if (cropOverlay.hidden) return;
+  const sx = sel.x / dispW * natW;
+  const sy = sel.y / dispH * natH;
+  const sw = sel.w / dispW * natW;
+  const sh = sel.h / dispH * natH;
+  const outW = Math.round(clampN(sw, 800, 1920));
+  const outH = Math.max(1, Math.round(outW * sh / sw));
+  const canvas = document.createElement('canvas');
+  canvas.width = outW; canvas.height = outH;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(cropImg, sx, sy, sw, sh, 0, 0, outW, outH);
+  let dataURL = '';
+  try { dataURL = canvas.toDataURL('image/jpeg', 0.85); }
+  catch(e){ toast('Не удалось обработать фото'); closeCrop(); return; }
+  const arr = getPhotos(currentId);
+  arr[cropSlot] = dataURL;
+  const saved = setPhotos(currentId, arr);
+  if (!saved) toast('Не удалось сохранить фото');
+  else if (dataURL.length > 2 * 1024 * 1024) toast('Файл большой, может не сохраниться');
+  slotState[cropSlot] = {type:'local', src:dataURL};
+  paintSlot(cropSlot);
+  closeCrop();
+}
+cropApply.addEventListener('click', applyCrop);
+
+/* ============================================================
+   ПЕЧАТЬ И СЛУЖЕБНОЕ
+   ============================================================ */
+printBtn.addEventListener('click', () => window.print());
+
+/* ============================================================
+   ИНИЦИАЛИЗАЦИЯ
+   ============================================================ */
+buildSlots();
+if (!lsOK) degradeBadge.hidden = false;
+(function init(){
+  const saved = parseInt(store.get('artek_age') || '', 10);
+  if (saved >= 8 && saved <= 17){
+    age = saved;
+    renderList();
+    showScreen('screen-list', 1, true);
+  } else {
+    showScreen('screen-age', 1, true);
+  }
+})();
+</script>
+</body>
+</html>
