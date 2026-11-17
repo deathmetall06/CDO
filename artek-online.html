@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="data:,">
-<!-- Версия с данными из таблицы Яндекс.Диска: https://disk.yandex.ru/i/_E2ixQvDdn5jZQ -->
+<!-- Версия с данными и фото из Яндекс.Диска · ревизия фото-2: https://disk.yandex.ru/i/_E2ixQvDdn5jZQ -->
 <title>Артек · Найди свою студию</title>
 <style>
 /* ============================================================
@@ -551,6 +551,17 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
    2) последняя удачная копия в этом браузере,
    3) встроенная в страницу копия.
    Парсер XLSX на чистом JS, без библиотек.
+
+   ФОТО берутся тоже с Диска. В таблице может быть лист «Настройки»,
+   в него вставлена ссылка на ОПУБЛИКОВАННУЮ ПАПКУ с фотографиями.
+   Сайт сам получает список файлов папки и подставляет фото в слоты
+   страницы студии по коду (колонка «Код (для фото)»):
+     КОД.jpg      — главное фото (слот 1)
+     КОД-2.jpg    — дополнительное (слот 2)
+     КОД-3.jpg    — дополнительное (слот 3)
+   Фото нет — слоты просто остаются пустыми, сайт не ломается.
+   Резервы фото: папка Images/ на хостинге, затем личные фото,
+   загруженные в этом браузере.
    ============================================================ */
 const DATA_FILE_URL = 'data.xlsx';          // резервный источник (копия на хостинге)
 const YANDEX_PUBLIC_KEY = 'https://disk.yandex.ru/i/_E2ixQvDdn5jZQ'; // мастер-таблица
@@ -647,7 +658,7 @@ async function zipRead(u8, ent){
   throw new Error('ZIP: неизвестный метод сжатия');
 }
 
-/* ---------- чтение XLSX (лист «Студии») ---------- */
+/* ---------- чтение XLSX: лист «Студии» + лист «Настройки» ---------- */
 async function parseXlsx(u8){
   const files = zipList(u8);
   const td = new TextDecoder('utf-8');
@@ -656,61 +667,106 @@ async function parseXlsx(u8){
   if (!wbName) throw new Error('В файле нет workbook.xml');
   const wbDoc = new DOMParser().parseFromString(td.decode(await zipRead(u8, files[wbName])), 'application/xml');
   const sheets = Array.from(wbDoc.getElementsByTagNameNS('*', 'sheet'));
-  let sheetEl = sheets.find(x => (x.getAttribute('name') || '').trim() === TABLE_SHEET) || sheets[0];
-  if (!sheetEl) throw new Error('В файле нет ни одного листа');
-  const rid = sheetEl.getAttribute('r:id') || sheetEl.getAttribute('id') || '';
-  let target = null;
-  const relsName = pick(/xl\/_rels\/workbook\.xml\.rels$/)[0];
-  if (relsName && rid){
-    const relsDoc = new DOMParser().parseFromString(td.decode(await zipRead(u8, files[relsName])), 'application/xml');
-    const rel = Array.from(relsDoc.getElementsByTagNameNS('*', 'Relationship')).find(r => r.getAttribute('Id') === rid);
-    if (rel) target = rel.getAttribute('Target');
-  }
-  if (!target){
-    const cand = pick(/^xl\/worksheets\/sheet\d+\.xml$/);
-    if (cand.length) target = cand[0];
-  }
-  let sheetPath = target ? (target.charAt(0) === '/' ? target.slice(1) : (/^xl\//.test(target) ? target : 'xl/' + target)) : '';
-  if (!files[sheetPath]){
-    const alt = pick(new RegExp(target.split('/').pop().replace('.', '\\.') + '$'));
-    if (alt.length) sheetPath = alt[0];
-  }
-  if (!files[sheetPath]) throw new Error('Не найден лист «' + TABLE_SHEET + '»');
 
+  /* общие строки (sharedStrings) читаются один раз для всех листов */
   const shared = [];
   const ssName = pick(/xl\/sharedStrings\.xml$/)[0];
   if (ssName){
     const ssDoc = new DOMParser().parseFromString(td.decode(await zipRead(u8, files[ssName])), 'application/xml');
     Array.from(ssDoc.getElementsByTagNameNS('*', 'si')).forEach(si => shared.push(si.textContent || ''));
   }
-  const shDoc = new DOMParser().parseFromString(td.decode(await zipRead(u8, files[sheetPath])), 'application/xml');
-  const rows = [];
-  Array.from(shDoc.getElementsByTagNameNS('*', 'row')).forEach(rowEl => {
-    const cells = {};
-    Array.from(rowEl.getElementsByTagNameNS('*', 'c')).forEach(c => {
-      const ref = c.getAttribute('r') || '';
-      const m = /^([A-Z]+)/.exec(ref);
-      if (!m) return;
-      let ci = 0;
-      for (const ch of m[1]) ci = ci * 26 + (ch.charCodeAt(0) - 64);
-      const t = c.getAttribute('t');
-      let val = '';
-      if (t === 'inlineStr'){
-        const isEl = c.getElementsByTagNameNS('*', 'is')[0];
-        val = isEl ? isEl.textContent : '';
-      } else {
-        const vEl = c.getElementsByTagNameNS('*', 'v')[0];
-        if (vEl) val = vEl.textContent;
-        if (t === 's') val = shared[parseInt(val, 10)] || '';
-      }
-      // Ячейка с формулой (например, итоговая строка «Итого студий»):
-      // помечаем «=», чтобы строка гарантированно пропускалась.
-      if (c.getElementsByTagNameNS('*', 'f').length > 0) val = '=' + val;
-      cells[ci] = val;
+
+  /* строки одного листа по имени; null, если листа нет */
+  async function sheetRows(wantName){
+    const sheetEl = sheets.find(x => (x.getAttribute('name') || '').trim() === wantName);
+    if (!sheetEl) return null;
+    const rid = sheetEl.getAttribute('r:id') || sheetEl.getAttribute('id') || '';
+    let target = null;
+    const relsName = pick(/xl\/_rels\/workbook\.xml\.rels$/)[0];
+    if (relsName && rid){
+      const relsDoc = new DOMParser().parseFromString(td.decode(await zipRead(u8, files[relsName])), 'application/xml');
+      const rel = Array.from(relsDoc.getElementsByTagNameNS('*', 'Relationship')).find(r => r.getAttribute('Id') === rid);
+      if (rel) target = rel.getAttribute('Target');
+    }
+    if (!target){
+      const cand = pick(/^xl\/worksheets\/sheet\d+\.xml$/);
+      if (cand.length) target = cand[0];
+    }
+    let sheetPath = target ? (target.charAt(0) === '/' ? target.slice(1) : (/^xl\//.test(target) ? target : 'xl/' + target)) : '';
+    if (!files[sheetPath]){
+      const alt = pick(new RegExp((target || '').split('/').pop().replace('.', '\\.') + '$'));
+      if (alt.length) sheetPath = alt[0];
+    }
+    if (!files[sheetPath]) return null;
+    const shDoc = new DOMParser().parseFromString(td.decode(await zipRead(u8, files[sheetPath])), 'application/xml');
+    const rows = [];
+    Array.from(shDoc.getElementsByTagNameNS('*', 'row')).forEach(rowEl => {
+      const cells = {};
+      Array.from(rowEl.getElementsByTagNameNS('*', 'c')).forEach(c => {
+        const ref = c.getAttribute('r') || '';
+        const m = /^([A-Z]+)/.exec(ref);
+        if (!m) return;
+        let ci = 0;
+        for (const ch of m[1]) ci = ci * 26 + (ch.charCodeAt(0) - 64);
+        const t = c.getAttribute('t');
+        let val = '';
+        if (t === 'inlineStr'){
+          const isEl = c.getElementsByTagNameNS('*', 'is')[0];
+          val = isEl ? isEl.textContent : '';
+        } else {
+          const vEl = c.getElementsByTagNameNS('*', 'v')[0];
+          if (vEl) val = vEl.textContent;
+          if (t === 's') val = shared[parseInt(val, 10)] || '';
+        }
+        // Ячейка с формулой (например, итоговая строка «Итого студий»):
+        // помечаем «=», чтобы строка гарантированно пропускалась.
+        if (c.getElementsByTagNameNS('*', 'f').length > 0) val = '=' + val;
+        cells[ci] = val;
+      });
+      rows.push(cells);
     });
-    rows.push(cells);
-  });
-  return rows;
+    return {rows, path: sheetPath};
+  }
+
+  const main = await sheetRows(TABLE_SHEET)
+           || await sheetRows(sheets.length ? (sheets[0].getAttribute('name') || '').trim() : '');
+  if (!main) throw new Error('Не найден лист «' + TABLE_SHEET + '»');
+
+  /* лист «Настройки» (или «Фото»): ищем ссылку на опубликованную папку
+     с фотографиями — в тексте ячеек или в гиперссылках */
+  const DISK_LINK_RE = /^https?:\/\/(disk\.yandex\.ru|yadi\.sk)\/(d|public)\//i;
+  let photosKey = '';
+  for (const nm of ['Настройки', 'Фото', 'Фотографии']){
+    const st = await sheetRows(nm);
+    if (!st) continue;
+    for (const r of st.rows){
+      for (const k in r){
+        const v = String(r[k] || '').trim();
+        if (DISK_LINK_RE.test(v)){ photosKey = v; break; }
+      }
+      if (photosKey) break;
+    }
+    if (!photosKey && files[st.path]){
+      /* ссылка может быть «спрятана» в гиперссылке ячейки */
+      try {
+        const relsName = st.path.replace(/([^/]+)$/, '_rels/$1.rels');
+        if (files[relsName]){
+          const shDoc2 = new DOMParser().parseFromString(td.decode(await zipRead(u8, files[st.path])), 'application/xml');
+          const relsDoc = new DOMParser().parseFromString(td.decode(await zipRead(u8, files[relsName])), 'application/xml');
+          const targets = {};
+          Array.from(relsDoc.getElementsByTagNameNS('*', 'Relationship')).forEach(r => {
+            targets[r.getAttribute('Id') || ''] = r.getAttribute('Target') || '';
+          });
+          Array.from(shDoc2.getElementsByTagNameNS('*', 'hyperlink')).forEach(h => {
+            const t = targets[h.getAttribute('r:id') || h.getAttribute('id') || ''] || '';
+            if (!photosKey && DISK_LINK_RE.test(t)) photosKey = t.trim();
+          });
+        }
+      } catch(e){ /* лист настроек без гиперссылок — не страшно */ }
+    }
+    if (photosKey) break;
+  }
+  return {rows: main.rows, photosKey};
 }
 
 function tableToStudios(rows){
@@ -783,7 +839,9 @@ async function loadTableFromFile(){
   if (!resp.ok) throw new Error('data.xlsx недоступен (HTTP ' + resp.status + ')');
   const buf = new Uint8Array(await resp.arrayBuffer());
   if (buf.length < 1000) throw new Error('data.xlsx подозрительно мал');
-  return tableToStudios(await parseXlsx(buf));
+  const parsed = await parseXlsx(buf);
+  applyTableMeta(parsed.photosKey);
+  return tableToStudios(parsed.rows);
 }
 
 /* ---------- живой источник: Яндекс.Диск ---------- */
@@ -820,7 +878,9 @@ async function loadTableFromYandex(){
   if (!resp.ok) throw new Error('Файл таблицы: HTTP ' + resp.status);
   const buf = new Uint8Array(await resp.arrayBuffer());
   if (buf.length < 1000) throw new Error('Файл таблицы подозрительно мал');
-  const list = tableToStudios(await parseXlsx(buf));
+  const parsed = await parseXlsx(buf);
+  applyTableMeta(parsed.photosKey);
+  const list = tableToStudios(parsed.rows);
   yandexStamp = fmtStamp(meta.modified);
   return list;
 }
@@ -850,6 +910,25 @@ let lastLoadedAt = null;   // когда сайт последний раз ус
 let refreshBusy = false;
 let lastRefreshAttempt = 0;
 let firstDataLoad = true;
+/* Состав плашки запоминается, чтобы дописать «фото: N», когда список
+   фотографий с Диска подгрузится чуть позже самой таблицы */
+let badgeState = null;     // {kind:'ok'|'warn', cnt, stamp}
+function photosBadgePart(){
+  if (!photoMap || !photoSrc) return '';
+  let n = 0;
+  for (const s of STUDIOS) if (photoMap[s.id] && photoMap[s.id].length) n++;
+  return ' · фото: ' + n + (photoSrc === 'cache' ? ' (копия)' : '');
+}
+function paintBadge(){
+  if (!badgeState) return;
+  const cnt = 'Каталог: ' + badgeState.cnt + ' ' + pluralStudiy(badgeState.cnt) + photosBadgePart();
+  if (badgeState.kind === 'ok'){
+    const stampPart = badgeState.stamp ? ' · файл от ' + badgeState.stamp : '';
+    setSourceBadge(cnt + ' · Яндекс.Диск' + stampPart + ' · загружено в ' + fmtLoadedAt(lastLoadedAt), 'ok');
+  } else {
+    setSourceBadge(cnt + ' · резервная копия data.xlsx · Яндекс.Диск недоступен', 'warn');
+  }
+}
 
 /* Порядок источников: 1) Яндекс.Диск (живой), 2) data.xlsx рядом
    со страницей, 3) то, что уже есть (последняя удачная копия). */
@@ -878,13 +957,8 @@ async function refreshData(force){
   const changed = JSON.stringify(list) !== JSON.stringify(STUDIOS);
   STUDIOS = list;
   const n = list.length;
-  const cnt = 'Каталог: ' + n + ' ' + pluralStudiy(n);
-  if (src === 'yandex'){
-    const stampPart = yandexStamp ? ' · файл от ' + yandexStamp : '';
-    setSourceBadge(cnt + ' · Яндекс.Диск' + stampPart + ' · загружено в ' + fmtLoadedAt(lastLoadedAt), 'ok');
-  } else {
-    setSourceBadge(cnt + ' · резервная копия data.xlsx · Яндекс.Диск недоступен', 'warn');
-  }
+  badgeState = {kind: src === 'yandex' ? 'ok' : 'warn', cnt: n, stamp: yandexStamp};
+  paintBadge();
   if (changed && age != null) renderList();
   if (changed && activeScreen === 'screen-studio'){
     if (currentId && byId(currentId)) renderStudio(byId(currentId));
@@ -892,6 +966,8 @@ async function refreshData(force){
   }
   if (changed && !firstDataLoad) toast('Каталог обновлён: ' + n + ' ' + pluralStudiy(n));
   firstDataLoad = false;
+  rebuildPhotoMap();     // таблица пришла — привязываем уже скачанные фото к кодам
+  loadPhotosFromDisk();  // если список фото ещё не получали (или пора обновить) — получаем
 }
 
 /* ============================================================
@@ -976,6 +1052,176 @@ function getEdit(id){
     const o = JSON.parse(raw);
     return (o && typeof o === 'object') ? o : null;
   } catch(e){ return null; }
+}
+
+/* ============================================================
+   ФОТО С ЯНДЕКС.ДИСКА
+   В таблице есть (или появится) лист «Настройки» со ссылкой на
+   опубликованную папку с фотографиями. Сайт получает список файлов
+   папки (одним-двумя запросами к публичному API Диска) и раскладывает
+   фото по кодам студий. Названия файлов:
+     КОД.jpg    — главное фото
+     КОД-2.jpg, КОД-3.jpg, КОД_2.jpg, «КОД 2.jpg» — дополнительные
+   Файлы с суффиксом «(2)» (копии Яндекса) и все не-картинки пропускаются.
+   Список кэшируется: если папка временно недоступна, фото показываются
+   из последней удачной копии. Фото Диска — главный источник, дальше
+   идут файлы Images/КОД-1.jpg на хостинге и личные фото браузера.
+   ============================================================ */
+let photosFolderKey = store.get('artek_photos_folder') || ''; // ссылка на папку с фото (лист «Настройки»)
+let photoMap = null;      // код студии → [url1, url2, url3]
+let photoSrc = '';        // откуда взят список: 'disk' | 'cache'
+let photosBusy = false;
+let lastPhotosAttempt = 0;
+let lastDiskItems = [];   // сырой список файлов папки (чтобы пересобрать карту,
+                          // когда таблица со студиями загрузится позже списка фото)
+const PHOTO_IMG_RE = /\.(jpe?g|png|webp|gif|bmp|avif|heic)$/i;
+
+/* в таблице появился другой ключ папки — обновить и перезагрузить фото */
+function applyTableMeta(photosKey){
+  photosKey = String(photosKey || '').trim();
+  if (photosKey && photosKey !== photosFolderKey){
+    photosFolderKey = photosKey;
+    photoMap = null;
+    photoSrc = '';
+    lastPhotosAttempt = 0;
+    try { store.set('artek_photos_folder', photosKey); } catch(e){}
+    loadPhotosFromDisk(true);
+  }
+}
+
+/* приводим имя файла и код студии к общему виду:
+   «Студия-01 (2).jpg» → без расширения, ниже регистром, «ё»→«е»,
+   пробелы схлопнуты (вариант со сдвигом в дефис — тоже) */
+function nameBases(name){
+  const raw = String(name || '').replace(/\.[a-z0-9]{1,5}$/i, '').toLowerCase().replace(/ё/g, 'е').trim();
+  if (!raw) return [];
+  const tight = raw.replace(/[\s\u00A0]+/g, '');
+  const dashed = raw.replace(/[\s\u00A0]+/g, '-');
+  return Array.from(new Set([tight, dashed]));
+}
+function photoNumRe(code){
+  const BS = String.fromCharCode(92);
+  const nonWord = new RegExp("[^-A-Za-z0-9" + BS + "u0400-" + BS + "u04FF]", "g");
+  const esc = String(code).replace(nonWord, ch => BS + ch);
+  return new RegExp("^" + esc + "(?:[-_ ]+(" + BS + "d+))?$");
+}
+function buildPhotoMap(items, codes){
+  const known = [];
+  codes.forEach(c => {
+    const bases = nameBases(c);
+    if (bases.length && !known.some(x => x.n === bases[0])) known.push({c: c, n: bases[0]});
+  });
+  const buckets = {};
+  for (const it of items){
+    const bases = nameBases(it.name);
+    if (!bases.length) continue;
+    let hit = null, num = 0;
+    for (const x of known){
+      if (bases.indexOf(x.n) >= 0){ hit = x; num = 1; break; }   // точное совпадение — главное фото
+    }
+    if (!hit){
+      for (const x of known){
+        for (const b of bases){
+          const m = photoNumRe(x.n).exec(b);
+          if (m && m[1]){ hit = x; num = parseInt(m[1], 10); break; }
+        }
+        if (hit) break;
+      }
+    }
+    /* «КОД (2).jpg» и прочие непонятные суффиксы не подходят никуда — пропускаем */
+    if (hit && num >= 1 && num <= 9){
+      const b = buckets[hit.n] = buckets[hit.n] || {code: hit.c, list: []};
+      if (!b.list.some(p => p.num === num)) b.list.push({num: num, url: it.url});
+    }
+  }
+  const map = {};
+  for (const k in buckets){
+    buckets[k].list.sort((a, b) => a.num - b.num);
+    map[buckets[k].code] = buckets[k].list.slice(0, 3).map(p => p.url);
+  }
+  return map;
+}
+
+/* Пересборка карты фото без сети: список файлов уже скачан, но таблица
+   со студиями могла загрузиться позже (или студии изменились) — тогда
+   первую привязку делали по пустому/старому списку кодов. */
+function rebuildPhotoMap(){
+  if (!lastDiskItems.length || !STUDIOS.length) return;
+  const map = buildPhotoMap(lastDiskItems, STUDIOS.map(s => s.id));
+  const before = photoMap ? JSON.stringify(photoMap) : '';
+  const changed = JSON.stringify(map) !== before || photoSrc !== 'disk';
+  photoMap = map;
+  photoSrc = 'disk';
+  if (changed){
+    if (Object.keys(map).length){
+      try { store.set('artek_photos_cache', JSON.stringify({key: photosFolderKey, map: map})); } catch(e){}
+    }
+    paintBadge();
+    if (activeScreen === 'screen-studio') loadSlots();
+  }
+}
+
+/* список файлов опубликованной папки (с превью 800px) */
+async function fetchDiskFolderItems(folderKey){
+  const items = [];
+  let offset = 0;
+  for (let page = 0; page < 10; page++){
+    const api = 'https://cloud-api.yandex.net/v1/disk/public/resources?public_key='
+      + encodeURIComponent(folderKey) + '&limit=200&offset=' + offset
+      + '&preview_size=XL&sort=name&_t=' + Date.now();
+    const resp = await fetchTimeout(api, 12000, {cache: 'no-store', referrerPolicy: 'no-referrer'});
+    if (!resp.ok) throw new Error('Яндекс.Диск (фото): HTTP ' + resp.status);
+    const data = await resp.json();
+    if (!data || data.type !== 'dir' || !data._embedded) throw new Error('Ссылка на фото в «Настройках» ведёт не на папку');
+    const emb = data._embedded;
+    const list = Array.isArray(emb.items) ? emb.items : [];
+    for (const it of list){
+      const nm = String(it.name || '');
+      if (!PHOTO_IMG_RE.test(nm)) continue;
+      const url = it.preview || it.file || '';
+      if (url) items.push({name: nm, url: url});
+    }
+    offset += list.length;
+    if (!list.length || offset >= (Number(emb.total) || 0)) break;
+  }
+  return items;
+}
+
+async function loadPhotosFromDisk(force){
+  if (!photosFolderKey || photosBusy) return;
+  const now = Date.now();
+  if (!force && now - lastPhotosAttempt < 60000) return;   // не чаще раза в минуту
+  lastPhotosAttempt = now;
+  photosBusy = true;
+  try {
+    const items = await withRetry(() => fetchDiskFolderItems(photosFolderKey), 2);
+    lastDiskItems = items;
+    photoMap = buildPhotoMap(items, STUDIOS.map(s => s.id));
+    photoSrc = 'disk';
+    /* пустую карту в кэш не пишем: затрём последнюю удачную копию */
+    if (Object.keys(photoMap).length){
+      try { store.set('artek_photos_cache', JSON.stringify({key: photosFolderKey, map: photoMap})); } catch(e){}
+    }
+    console.info('artek: фото получены с Диска — файлов подходящих: ' + items.length + ', студий с фото: ' + Object.keys(photoMap).length);
+    paintBadge();
+    if (activeScreen === 'screen-studio') loadSlots();
+  } catch(e){
+    console.warn('artek: список фото с Диска не получен —', e && e.message);
+    if (!photoMap){
+      /* резерв: последняя удачная копия списка фото */
+      try {
+        const raw = JSON.parse(store.get('artek_photos_cache') || 'null');
+        if (raw && raw.key === photosFolderKey && raw.map && Object.keys(raw.map).length){
+          photoMap = raw.map;
+          photoSrc = 'cache';
+          paintBadge();
+          if (activeScreen === 'screen-studio') loadSlots();
+        }
+      } catch(_e){}
+    }
+  } finally {
+    photosBusy = false;
+  }
 }
 
 /* ============================================================
@@ -1278,11 +1524,15 @@ function buildSlots(){
       const f = e.dataTransfer.files && e.dataTransfer.files[0];
       if (!f) return;
       if (!f.type.startsWith('image/')){ toast('Это не изображение'); return; }
-      if (slotState[i].type === 'file'){ toast('Фото из каталога нельзя заменить'); return; }
+      if (slotState[i].type === 'file' || slotState[i].type === 'disk'){ toast('Фото из каталога нельзя заменить'); return; }
       cropOpen(f, i);
     });
   }
 }
+/* Откуда берутся фото для слотов (по убыванию приоритета):
+   1) папка с Яндекс.Диска (ссылка в листе «Настройки» таблицы);
+   2) файлы Images/КОД-1.jpg…КОД-3.jpg рядом со страницей;
+   3) личные фото этого браузера (режим редактирования). */
 const fileCache = {};
 function checkFile(src){
   return new Promise(res => {
@@ -1294,6 +1544,8 @@ function checkFile(src){
   });
 }
 async function resolveSlot(id, n){
+  const remote = (photoMap && photoMap[id] && photoMap[id][n - 1]) || '';
+  if (remote) return {type:'disk', src: remote};
   const cands = ['Images/' + id + '-' + n + '.jpg'];
   if (n === 1) cands.push('Images/' + id + '.jpg');
   for (const src of cands){ if (await checkFile(src)) return {type:'file', src}; }
@@ -1325,14 +1577,15 @@ function paintSlot(i){
   } else {
     empty.hidden = true;
     img.hidden = false;
+    img.referrerPolicy = 'no-referrer'; // Диск отдаёт картинки только без чужого Referer
     img.onerror = () => {
       if (st.type === 'local'){
         const a = getPhotos(currentId);
         a[i] = null;
         setPhotos(currentId, a);
-        slotState[i] = {type:'empty'};
-        paintSlot(i);
       }
+      slotState[i] = {type:'empty'};
+      paintSlot(i);
     };
     img.src = st.src;
   }
@@ -1600,6 +1853,7 @@ bootData();
   }
 })();
 refreshData();
+loadPhotosFromDisk();   // фото подтягиваются параллельно с таблицей
 
 /* --- автопроверка обновлений: каждые 5 минут и при возврате на вкладку --- */
 setInterval(() => { if (document.visibilityState === 'visible') refreshData(); }, 5 * 60 * 1000);
