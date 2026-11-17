@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="data:,">
-<!-- Версия с данными и фото из Яндекс.Диска · ревизия 3 (мобильная версия + запись на студии): https://disk.yandex.ru/i/_E2ixQvDdn5jZQ -->
+<!-- Версия с данными и фото из Яндекс.Диска · ревизия 4 (мобильная версия + запись: 1 ребёнок — 1 студия, выгрузка Excel по лагерям, завершение набора с архивом): https://disk.yandex.ru/i/_E2ixQvDdn5jZQ -->
 <title>Артек · Найди свою студию</title>
 <style>
 /* ============================================================
@@ -377,6 +377,19 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .admin-row .meta{font-size:12px;color:rgba(29,29,31,.55);white-space:nowrap}
 .admin-empty{color:rgba(29,29,31,.5);font-size:14px;padding:18px 0;text-align:center}
 .admin-hint-ok{color:#0a7a3d;font-weight:600}
+.admin-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.btn-danger{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:999px;border:0;cursor:pointer;background:#a1231f;color:#fff;font:inherit;font-size:14px;font-weight:700;box-shadow:0 6px 18px rgba(161,35,31,.28);transition:transform .16s var(--ease),opacity .16s}
+.btn-danger:hover{transform:translateY(-1px)}
+.btn-danger:active{transform:translateY(0)}
+.btn-danger[disabled]{opacity:.55;cursor:not-allowed;transform:none !important;box-shadow:none}
+.admin-reset{margin-top:16px;border-top:1.5px dashed rgba(29,29,31,.16);padding-top:14px}
+.admin-reset-title{font-weight:700;font-size:14px;color:#a1231f}
+.admin-reset-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+.admin-reset-row select{min-height:42px;border:1.5px solid rgba(29,29,31,.14);border-radius:12px;padding:0 12px;font:inherit;font-size:13.5px;background:#fff;outline:0;flex:1;min-width:170px}
+.admin-reset-row .btn-ghost{flex:none}
+.reset-scope-text{font-size:14.5px;font-weight:700}
+.reset-count-text{font-size:13px;color:rgba(29,29,31,.65)}
+.crop-actions.wrap{flex-wrap:wrap}
 
 /* ---------- узкий контейнер (<720px внутри рамки) ---------- */
 @container frame (max-width:719px){
@@ -606,8 +619,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
       <label for="enrollCamp">Лагерь
         <select id="enrollCamp" required></select>
       </label>
-      <label for="enrollSquad">Отряд — номер
-        <input id="enrollSquad" type="text" inputmode="numeric" placeholder="Например, 5" autocomplete="off" maxlength="4" required>
+      <label for="enrollSquad">Отряд — номер (от 1 до 30)
+        <input id="enrollSquad" type="text" inputmode="numeric" placeholder="Например, 5" autocomplete="off" maxlength="2" required>
       </label>
       <label for="enrollLast">Фамилия
         <input id="enrollLast" type="text" placeholder="Фамилия" autocomplete="off" maxlength="60" required>
@@ -641,15 +654,46 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
     </form>
     <div id="adminPanel" hidden>
       <div class="admin-toolbar">
+        <select id="adminCamp" aria-label="Лагерь"></select>
         <select id="adminStudio" aria-label="Студия"></select>
         <input id="adminSearch" type="text" class="admin-search" placeholder="Поиск: фамилия, лагерь, отряд" autocomplete="off">
         <button type="button" class="btn-ghost" id="adminRefresh" title="Обновить данные">Обновить</button>
         <button type="button" class="btn-ghost" id="adminLogout" title="Ввести другой код доступа">Сменить код</button>
+      </div>
+      <div class="admin-actions">
         <button type="button" class="btn-primary" id="adminExport">Скачать Excel</button>
+        <span class="crop-hint">В файле два листа: «Списки» — дети по студиям, «Сводка» — всего и по отрядам. Внизу первого листа — студии без записей.</span>
       </div>
       <p class="admin-total" id="adminTotal"></p>
       <div class="admin-list" id="adminList" aria-live="polite"></div>
+      <div class="admin-reset">
+        <p class="admin-reset-title">Завершить набор</p>
+        <p class="crop-hint">Заявки переедут в архивный лист таблицы Google — ничего не потеряется, а на сайте снова откроются все места. Дети эту кнопку не видят.</p>
+        <div class="admin-reset-row">
+          <select id="adminResetScope" aria-label="Что очищаем">
+            <option value="all">Весь набор — все лагеря</option>
+            <option value="camp">Только один лагерь</option>
+          </select>
+          <select id="adminResetCamp" aria-label="Какой лагерь очистить" hidden></select>
+          <button type="button" class="btn-ghost" id="adminReset">Завершить…</button>
+        </div>
+      </div>
       <p class="crop-hint" id="adminHint"></p>
+    </div>
+  </div>
+</div>
+
+<!-- Подтверждение завершения набора -->
+<div class="crop-overlay print-hide" id="resetOverlay" hidden>
+  <div class="crop-modal enroll-modal" role="dialog" aria-modal="true" aria-label="Завершение набора">
+    <p class="crop-title">Завершить набор?</p>
+    <p class="reset-scope-text" id="resetScopeText"></p>
+    <p class="reset-count-text" id="resetCountText"></p>
+    <p class="crop-hint">Заявки переедут в архивный лист таблицы Google, и на сайте снова станут доступны все места. Продолжить?</p>
+    <div class="crop-actions wrap">
+      <button type="button" class="btn-ghost" id="resetCancel">Отмена</button>
+      <button type="button" class="btn-ghost" id="resetBackup">Скачать копию и завершить</button>
+      <button type="button" class="btn-danger" id="resetGo">Завершить без копии</button>
     </div>
   </div>
 </div>
@@ -1203,6 +1247,9 @@ function getEdit(id){
    ============================================================ */
 let photosFolderKey = store.get('artek_photos_folder') || ''; // ссылка на папку с фото (лист «Настройки»)
 let enrollKey = store.get('artek_enroll_key') || '';          // ссылка на скрипт приёма заявок (Google)
+/* отладка/тесты: ?bridge=… перекрывает ссылку из «Настроек» */
+const bridgeOverride = (() => { try { return new URLSearchParams(location.search).get('bridge') || ''; } catch(e){ return ''; } })();
+if (bridgeOverride) enrollKey = bridgeOverride;
 let photoMap = null;      // код студии → [url1, url2, url3]
 let photoSrc = '';        // откуда взят список: 'disk' | 'cache'
 let photosBusy = false;
@@ -1223,7 +1270,7 @@ function applyTableMeta(meta){
     loadPhotosFromDisk(true);
   }
   const ek = String((meta && meta.enrollScript) || '').trim();
-  if (ek && ek !== enrollKey){
+  if (ek && !bridgeOverride && ek !== enrollKey){
     enrollKey = ek;
     takenMap = null;
     lastEnrollAttempt = 0;
@@ -1376,8 +1423,7 @@ async function loadPhotosFromDisk(force){
    Названия лагерей ниже — общий список Артека; при желании можно
    править прямо здесь (в кавычках, через запятую).
    ============================================================ */
-const CAMP_LIST = ['Лесной', 'Полевой', 'Кипарисный', 'Лазурный', 'Морской', 'Хрустальный',
-                   'Янтарный', 'Речной', 'Океанский', 'Солнечный', 'Вымпел'];
+const CAMP_LIST = ['Лесной', 'Полевой', 'Озёрный', 'Воздушный', 'Парусный', 'Кипарисный', 'Лазурный', 'Морской', 'Хрустальный', 'Янтарный', 'Речной'];
 let takenMap = null;            // код студии → занято мест
 let enrollCountsBusy = false;
 let lastEnrollAttempt = 0;
@@ -1431,24 +1477,33 @@ function paintEnrollBox(){
   const seats = $('#enrollSeats');
   const cap = Number(s.cap) || 0;
   const left = cap ? Math.max(0, cap - takenCount(s.id)) : 0;
-  if (enrolledDevice){
+  if (enrolledDevice && enrolledDevice.code === s.id){
     box.classList.remove('full');
     btn.hidden = true;
-    seats.innerHTML = 'Вы записаны на студию «' + esc(enrolledDevice.title || '') + '»'
+    seats.innerHTML = 'Вы записаны на эту студию'
       + '<span class="enroll-sub">Если ошиблись — обратитесь к методисту</span>';
     return;
   }
-  btn.hidden = false;
-  btn.disabled = false;
-  btnText.textContent = 'Записаться';
   if (cap && left <= 0){
     box.classList.add('full');
+    btn.hidden = false;
     btn.disabled = true;
     btnText.textContent = 'Все места заняты';
     seats.innerHTML = 'Мест не осталось<span class="enroll-sub">Запись была на ' + cap + ' ' + pluralMest(cap) + '</span>';
     return;
   }
   box.classList.remove('full');
+  if (enrolledDevice){
+    btn.hidden = false;
+    btn.disabled = false;
+    btnText.textContent = 'Записать другого ребёнка';
+    seats.innerHTML = 'С этого устройства уже записали на студию «' + esc(enrolledDevice.title || '') + '»'
+      + '<span class="enroll-sub">Можно записать и другого ребёнка — каждый может быть в одной студии</span>';
+    return;
+  }
+  btn.hidden = false;
+  btn.disabled = false;
+  btnText.textContent = 'Записаться';
   if (cap){
     seats.innerHTML = 'Осталось ' + left + ' ' + pluralMest(left)
       + '<span class="enroll-sub">из ' + cap + ' ' + pluralMest(cap) + ' в студии</span>';
@@ -1511,7 +1566,8 @@ enrollFormEl.addEventListener('submit', async e => {
   const last = enrollLastEl.value.trim();
   const first = enrollFirstEl.value.trim();
   if (!camp){ showEnrollError('Выберите лагерь'); return; }
-  if (!/^\d{1,4}$/.test(squad)){ showEnrollError('Отряд — это номер, например 5'); return; }
+  const squadN = parseInt(squad, 10);
+  if (!/^\d{1,2}$/.test(squad) || !(squadN >= 1 && squadN <= 30)){ showEnrollError('Отряд — число от 1 до 30'); return; }
   if (last.length < 2 || first.length < 2){ showEnrollError('Напишите фамилию и имя полностью'); return; }
   enrollErrorEl.hidden = true;
   enrollSubmitBtn.disabled = true;
@@ -1520,7 +1576,7 @@ enrollFormEl.addEventListener('submit', async e => {
     const resp = await fetchTimeout(enrollKey, 15000, {
       method: 'POST',
       headers: {'Content-Type': 'text/plain;charset=utf-8'},
-      body: JSON.stringify({code: s.id, title: s.title, camp: camp, squad: squad, last: last, first: first})
+      body: JSON.stringify({code: s.id, title: s.title, cap: Number(s.cap) || 0, camp: camp, squad: squad, last: last, first: first})
     });
     let data = null;
     try { data = await resp.json(); } catch(_e){ /* тело не прочитали — считаем отправленным */ }
@@ -2155,6 +2211,205 @@ function applyCrop(){
 cropApply.addEventListener('click', applyCrop);
 
 /* ============================================================
+   ЗАПИСЬ XLSX (без библиотек)
+   Небольшой сборщик Excel-файлов для методиста: список детей
+   по студиям и сводка по отрядам. Собираем всё прямо в браузере.
+   ============================================================ */
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++){
+    let c = n;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(u8){
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < u8.length; i++) c = CRC_TABLE[(c ^ u8[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+function utf8Bytes(str){ return new TextEncoder().encode(str); }
+/* ZIP без сжатия (метод store) — Excel такой открывает без вопросов */
+function zipStore(files){
+  const chunks = [], central = [];
+  let offset = 0;
+  const DDATE = ((2026 - 1980) << 9) | (1 << 5) | 1; // 01.01.2026
+  files.forEach(f => {
+    const nameU = f.nameU, data = f.data;
+    const crc = crc32(data);
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true);
+    lh.setUint16(4, 20, true);
+    lh.setUint16(6, 0, true);
+    lh.setUint16(8, 0, true);
+    lh.setUint16(10, 0, true);
+    lh.setUint16(12, DDATE, true);
+    lh.setUint32(14, crc, true);
+    lh.setUint32(18, data.length, true);
+    lh.setUint32(22, data.length, true);
+    lh.setUint16(26, nameU.length, true);
+    lh.setUint16(28, 0, true);
+    chunks.push(new Uint8Array(lh.buffer), nameU, data);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true);
+    ch.setUint16(4, 20, true);
+    ch.setUint16(6, 20, true);
+    ch.setUint32(16, crc, true);
+    ch.setUint32(20, data.length, true);
+    ch.setUint32(24, data.length, true);
+    ch.setUint16(28, nameU.length, true);
+    ch.setUint32(42, offset, true);
+    central.push(new Uint8Array(ch.buffer), nameU);
+    offset += 30 + nameU.length + data.length;
+  });
+  let cdSize = 0;
+  central.forEach(c => { cdSize += c.length; });
+  const eocd = new DataView(new ArrayBuffer(22));
+  eocd.setUint32(0, 0x06054b50, true);
+  eocd.setUint16(8, files.length, true);
+  eocd.setUint16(10, files.length, true);
+  eocd.setUint32(12, cdSize, true);
+  eocd.setUint32(16, offset, true);
+  const out = new Uint8Array(offset + cdSize + 22);
+  let pos = 0;
+  for (const c of chunks){ out.set(c, pos); pos += c.length; }
+  for (const c of central){ out.set(c, pos); pos += c.length; }
+  out.set(new Uint8Array(eocd.buffer), pos);
+  return out;
+}
+function xmlEsc(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function colLetter(n){
+  let s = '';
+  while (n > 0){ const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); }
+  return s;
+}
+function sheetXml(sheet){
+  let cols = '';
+  if (sheet.cols && sheet.cols.length){
+    cols = '<cols>' + sheet.cols.map((w, i) => '<col min="' + (i + 1) + '" max="' + (i + 1) + '" width="' + w + '" customWidth="1"/>').join('') + '</cols>';
+  }
+  const rowsXml = sheet.rows.map((cells, ri) => {
+    const r = ri + 1;
+    const cs = cells.map((cell, ci) => {
+      if (cell == null || cell === '') return '';
+      const ref = colLetter(ci + 1) + r;
+      const bold = (cell && typeof cell === 'object' && cell.b) ? ' s="1"' : '';
+      if (cell && typeof cell === 'object' && cell.t === 'n'){
+        return '<c r="' + ref + '"' + bold + '><v>' + Number(cell.v) + '</v></c>';
+      }
+      if (typeof cell === 'number') return '<c r="' + ref + '"' + bold + '><v>' + cell + '</v></c>';
+      const v = (cell && typeof cell === 'object') ? cell.v : cell;
+      return '<c r="' + ref + '" t="inlineStr"' + bold + '><is><t xml:space="preserve">' + xmlEsc(v) + '</t></is></c>';
+    }).join('');
+    return '<row r="' + r + '">' + cs + '</row>';
+  }).join('');
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+    + cols + '<sheetData>' + rowsXml + '</sheetData></worksheet>';
+}
+function buildXlsx(sheets){
+  const files = [];
+  const ct = ['<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">',
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>',
+    '<Default Extension="xml" ContentType="application/xml"/>',
+    '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'];
+  sheets.forEach((s, i) => {
+    ct.push('<Override PartName="/xl/worksheets/sheet' + (i + 1) + '.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>');
+  });
+  ct.push('<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>', '</Types>');
+  files.push({name: '[Content_Types].xml', data: utf8Bytes(ct.join('')), nameU: utf8Bytes('[Content_Types].xml')});
+  files.push({name: '_rels/.rels', data: utf8Bytes('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'), nameU: utf8Bytes('_rels/.rels')});
+  const wbSheets = sheets.map((s, i) => '<sheet name="' + xmlEsc(s.name) + '" sheetId="' + (i + 1) + '" r:id="rId' + (i + 1) + '"/>').join('');
+  files.push({name: 'xl/workbook.xml', data: utf8Bytes('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>' + wbSheets + '</sheets></workbook>'), nameU: utf8Bytes('xl/workbook.xml')});
+  const rels = sheets.map((s, i) => '<Relationship Id="rId' + (i + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet' + (i + 1) + '.xml"/>').join('')
+    + '<Relationship Id="rId' + (sheets.length + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>';
+  files.push({name: 'xl/_rels/workbook.xml.rels', data: utf8Bytes('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' + rels + '</Relationships>'), nameU: utf8Bytes('xl/_rels/workbook.xml.rels')});
+  sheets.forEach((s, i) => {
+    files.push({name: 'xl/worksheets/sheet' + (i + 1) + '.xml', data: utf8Bytes(sheetXml(s)), nameU: utf8Bytes('xl/worksheets/sheet' + (i + 1) + '.xml')});
+  });
+  files.push({name: 'xl/styles.xml', data: utf8Bytes('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" applyFont="1"/></cellXfs></styleSheet>'), nameU: utf8Bytes('xl/styles.xml')});
+  return zipStore(files);
+}
+function downloadBlob(fname, blob){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = fname;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 400);
+}
+const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+function studioTitleOf(code, fb){
+  const st = byId(code);
+  return (st && st.title) || fb || code;
+}
+function pushStudioBlock(rows, title, apps, allCamps){
+  rows.push([{v: title + ' (' + apps.length + ' ' + plural(apps.length, 'человек', 'человека', 'человек') + ')', b: 1}]);
+  rows.push(allCamps ? [{v: 'Лагерь'}, {v: 'Отряд'}, {v: 'Имя и фамилия'}] : [{v: 'Отряд'}, {v: 'Имя и фамилия'}]);
+  apps.slice()
+    .sort((a, b) => (parseInt(a.squad, 10) || 0) - (parseInt(b.squad, 10) || 0)
+      || String(a.last || '').localeCompare(String(b.last || ''), 'ru')
+      || String(a.first || '').localeCompare(String(b.first || ''), 'ru'))
+    .forEach(a => {
+      const fio = ((a.last || '') + ' ' + (a.first || '')).trim();
+      const sq = parseInt(a.squad, 10) || a.squad || '';
+      rows.push(allCamps ? [a.camp || '', sq, fio] : [sq, fio]);
+    });
+  rows.push([]);
+}
+function makeExportSheets(list, allCamps){
+  const byCode = {};
+  list.forEach(a => { (byCode[a.code] = byCode[a.code] || []).push(a); });
+  const rows1 = [];
+  const empty = [];
+  const seen = {};
+  STUDIOS.forEach(s => {
+    const apps = byCode[s.id];
+    if (!apps || !apps.length){ empty.push(s.title); return; }
+    seen[s.id] = true;
+    pushStudioBlock(rows1, s.title, apps, allCamps);
+  });
+  /* заявки на студии, которых уже нет в каталоге */
+  Object.keys(byCode).forEach(code => {
+    if (!seen[code]) pushStudioBlock(rows1, studioTitleOf(code, (byCode[code][0] || {}).title), byCode[code], allCamps);
+  });
+  if (empty.length){
+    rows1.push([]);
+    rows1.push([{v: 'Студии без записей', b: 1}]);
+    empty.forEach(t => rows1.push([t]));
+  }
+  const bySquad = {};
+  list.forEach(a => {
+    const k = String(parseInt(a.squad, 10) || 0);
+    if (k !== '0') bySquad[k] = (bySquad[k] || 0) + 1;
+  });
+  const rows2 = [[{v: 'Всего записалось детей: ' + list.length, b: 1}], []];
+  rows2.push([{v: 'Отряд', b: 1}, {v: 'Детей', b: 1}]);
+  Object.keys(bySquad).sort((x, y) => parseInt(x, 10) - parseInt(y, 10)).forEach(k => {
+    rows2.push([k + ' отряд', bySquad[k]]);
+  });
+  return [
+    {name: 'Списки', cols: allCamps ? [22, 10, 36] : [10, 36], rows: rows1},
+    {name: 'Сводка', cols: [16, 10], rows: rows2}
+  ];
+}
+function makeBackupSheet(list){
+  const rows = [[{v: 'Время', b: 1}, {v: 'Лагерь', b: 1}, {v: 'Отряд', b: 1}, {v: 'Фамилия', b: 1}, {v: 'Имя', b: 1}, {v: 'Студия', b: 1}]];
+  list.slice().sort((a, b) => String(a.ts || '').localeCompare(String(b.ts || ''))).forEach(a => {
+    const d = a.ts ? new Date(a.ts) : null;
+    const when = d && !isNaN(d.getTime())
+      ? pad2(d.getDate()) + '.' + pad2(d.getMonth() + 1) + '.' + d.getFullYear() + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes())
+      : '';
+    rows.push([when, a.camp || '', parseInt(a.squad, 10) || a.squad || '', a.last || '', a.first || '', studioTitleOf(a.code, a.title)]);
+  });
+  return {name: 'Заявки', cols: [18, 16, 8, 24, 18, 36], rows: rows};
+}
+
+/* ============================================================
    ПЕЧАТЬ И СЛУЖЕБНОЕ
    ============================================================ */
 printBtn.addEventListener('click', () => window.print());
@@ -2163,13 +2418,15 @@ printBtn.addEventListener('click', () => window.print());
    РЕЖИМ МЕТОДИСТА
    Пять быстрых нажатий на надпись «КАТАЛОГ СТУДИЙ» открывают
    окно с кодом доступа (код задаётся в скрипте Google).
-   Внутри — заявки по студиям и выгрузка в Excel (CSV).
+   Внутри — заявки по лагерям и студиям, выгрузка Excel
+   (лист «Списки» + лист «Сводка») и «Завершить набор» с архивом.
    ============================================================ */
 const adminOverlay = $('#adminOverlay');
 const adminGateEl = $('#adminGate');
 const adminPanelEl = $('#adminPanel');
 const adminKeyEl = $('#adminKey');
 const adminErrorEl = $('#adminError');
+const adminCampEl = $('#adminCamp');
 const adminStudioEl = $('#adminStudio');
 const adminSearchEl = $('#adminSearch');
 const adminListEl = $('#adminList');
@@ -2177,11 +2434,31 @@ const adminTotalEl = $('#adminTotal');
 const adminHintEl = $('#adminHint');
 const adminEnterBtn = $('#adminEnter');
 const adminRefreshBtn = $('#adminRefresh');
+const adminExportBtn = $('#adminExport');
+const adminResetScopeEl = $('#adminResetScope');
+const adminResetCampEl = $('#adminResetCamp');
+const resetOverlay = $('#resetOverlay');
+const resetScopeText = $('#resetScopeText');
+const resetCountText = $('#resetCountText');
 let adminApps = null;    // весь список заявок
 let adminKey = '';
 let adminBusy = false;
+let adminExportBusy = false;
+let resetBusy = false;
+let resetState = null;
 function pad2(n){ return (n < 10 ? '0' : '') + n; }
 try { adminKey = sessionStorage.getItem('artek_admin_key') || ''; } catch(e){ adminKey = ''; }
+
+function fillAdminCamps(){
+  if (!adminCampEl.options.length){
+    adminCampEl.innerHTML = '<option value="">Все лагеря</option>'
+      + CAMP_LIST.map(c => '<option value="' + esc(c) + '">' + esc(c) + '</option>').join('');
+  }
+  if (!adminResetCampEl.options.length){
+    adminResetCampEl.innerHTML = '<option value="">— выберите лагерь —</option>'
+      + CAMP_LIST.map(c => '<option value="' + esc(c) + '">' + esc(c) + '</option>').join('');
+  }
+}
 
 let brandTaps = [];
 $('#brandTap').addEventListener('click', () => {
@@ -2195,6 +2472,7 @@ $('#brandTap').addEventListener('click', () => {
 });
 
 function openAdmin(){
+  fillAdminCamps();
   adminErrorEl.hidden = true;
   adminOverlay.hidden = false;
   document.body.style.overflow = 'hidden';
@@ -2312,10 +2590,14 @@ function paintAdminList(){
   if (!adminApps) return;
   const q = adminSearchEl.value.trim().toLowerCase();
   const sel = adminStudioEl.value;
+  const camp = adminCampEl ? adminCampEl.value : '';
   let rows = adminApps;
+  if (camp) rows = rows.filter(a => a.camp === camp);
   if (sel) rows = rows.filter(a => a.code === sel);
   if (q) rows = rows.filter(a => ((a.last || '') + ' ' + (a.first || '') + ' ' + (a.camp || '') + ' ' + (a.squad || '')).toLowerCase().indexOf(q) >= 0);
-  adminTotalEl.textContent = 'Показано заявок: ' + rows.length + (sel ? '' : ' · всего ' + adminApps.length);
+  adminTotalEl.textContent = 'Показано заявок: ' + rows.length
+    + (camp ? ' · лагерь «' + camp + '»' : '')
+    + (sel || camp ? '' : ' · всего ' + adminApps.length);
   if (!rows.length){
     adminListEl.innerHTML = '<p class="admin-empty">Заявок пока нет' + (q || sel ? ' — под фильтр ничего не попало' : '') + '</p>';
     return;
@@ -2332,6 +2614,7 @@ function paintAdminList(){
   }).join('');
 }
 adminStudioEl.addEventListener('change', paintAdminList);
+adminCampEl.addEventListener('change', paintAdminList);
 adminSearchEl.addEventListener('input', paintAdminList);
 adminRefreshBtn.addEventListener('click', refreshAdmin);
 $('#adminLogout').addEventListener('click', () => {
@@ -2344,31 +2627,97 @@ $('#adminLogout').addEventListener('click', () => {
   setTimeout(() => { try { adminKeyEl.focus(); } catch(e){} }, 60);
 });
 
-$('#adminExport').addEventListener('click', () => {
+/* выгрузка Excel: лист «Списки» (дети по студиям) + лист «Сводка» (всего и по отрядам) */
+adminExportBtn.addEventListener('click', () => {
   const rows = adminApps || [];
   if (!rows.length){ toast('Заявок пока нет'); return; }
-  const head = ['Студия', 'Код', 'Лагерь', 'Отряд', 'Фамилия', 'Имя', 'Время'];
-  const lines = [head.join(';')];
-  rows.forEach(a => {
-    const st = byId(a.code);
-    const title = (st && st.title) || a.title || a.code;
-    const d = a.ts ? new Date(a.ts) : null;
-    const when = d && !isNaN(d.getTime())
-      ? pad2(d.getDate()) + '.' + pad2(d.getMonth() + 1) + '.' + d.getFullYear() + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes())
-      : '';
-    lines.push([title, a.code, a.camp || '', a.squad || '', a.last || '', a.first || '', when]
-      .map(x => '"' + String(x).replace(/"/g, '""') + '"').join(';'));
-  });
-  const blob = new Blob(['\uFEFF' + lines.join('\r\n')], {type: 'text/csv;charset=utf-8'});
-  const a = document.createElement('a');
-  const now = new Date();
-  a.href = URL.createObjectURL(blob);
-  a.download = 'заявки-' + now.getFullYear() + '-' + pad2(now.getMonth() + 1) + '-' + pad2(now.getDate()) + '.csv';
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 400);
-  adminHintEl.innerHTML = '<span class="admin-hint-ok">Файл сохранён.</span> Открывается в Excel: данные уже разложены по колонкам.';
+  if (adminExportBusy) return;
+  adminExportBusy = true;
+  adminExportBtn.disabled = true;
+  adminExportBtn.textContent = 'Готовим файл…';
+  setTimeout(() => {
+    try {
+      const camp = adminCampEl.value;
+      const list = camp ? rows.filter(a => a.camp === camp) : rows;
+      if (!list.length){ toast('В выбранном лагере заявок нет'); return; }
+      const d = new Date();
+      const stamp = pad2(d.getDate()) + '.' + pad2(d.getMonth() + 1);
+      const fname = 'Записи · ' + (camp || 'все лагеря') + ' · ' + stamp + '.xlsx';
+      downloadBlob(fname, new Blob([buildXlsx(makeExportSheets(list, !camp))], {type: XLSX_MIME}));
+      adminHintEl.innerHTML = '<span class="admin-hint-ok">Файл сохранён: ' + esc(fname) + '</span>';
+    } catch(err){
+      toast('Не удалось собрать файл: ' + (err && err.message));
+    } finally {
+      adminExportBusy = false;
+      adminExportBtn.disabled = false;
+      adminExportBtn.textContent = 'Скачать Excel';
+    }
+  }, 30);
 });
+
+/* ---------- завершение набора (сброс с архивом) ---------- */
+adminResetScopeEl.addEventListener('change', () => {
+  adminResetCampEl.hidden = adminResetScopeEl.value !== 'camp';
+});
+$('#adminReset').addEventListener('click', () => {
+  const scope = adminResetScopeEl.value;
+  const camp = scope === 'camp' ? adminResetCampEl.value : '';
+  if (scope === 'camp' && !camp){ toast('Выберите лагерь, который очищаем'); return; }
+  const list = scope === 'camp' ? (adminApps || []).filter(a => a.camp === camp) : (adminApps || []);
+  resetState = {scope: scope, camp: camp, list: list};
+  resetScopeText.textContent = scope === 'camp'
+    ? 'Будут очищены списки лагеря «' + camp + '».'
+    : 'Будут очищены списки всех лагерей.';
+  resetCountText.textContent = list.length
+    ? 'В архив переедет ' + list.length + ' ' + plural(list.length, 'заявка', 'заявки', 'заявок') + '.'
+    : 'Заявок в выбранном объёме нет — просто обнулятся счётчики.';
+  resetOverlay.hidden = false;
+});
+function closeReset(){ resetOverlay.hidden = true; }
+$('#resetCancel').addEventListener('click', closeReset);
+resetOverlay.addEventListener('click', e => { if (e.target === resetOverlay) closeReset(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !resetOverlay.hidden) closeReset();
+});
+async function doReset(withBackup){
+  if (!resetState || resetBusy) return;
+  resetBusy = true;
+  ['#resetCancel', '#resetBackup', '#resetGo'].forEach(sel => { $(sel).disabled = true; });
+  const goBtn = $('#resetGo');
+  goBtn.textContent = 'Завершаем…';
+  try {
+    if (withBackup && resetState.list.length){
+      const d = new Date();
+      const fname = 'Копия заявок · ' + pad2(d.getDate()) + '.' + pad2(d.getMonth() + 1) + '.xlsx';
+      downloadBlob(fname, new Blob([buildXlsx([makeBackupSheet(resetState.list)])], {type: XLSX_MIME}));
+      await new Promise(r => setTimeout(r, 700)); // даём браузеру начать скачивание
+    }
+    const resp = await fetchTimeout(enrollKey, 20000, {
+      method: 'POST',
+      headers: {'Content-Type': 'text/plain;charset=utf-8'},
+      body: JSON.stringify({action: 'reset', key: adminKey, scope: resetState.scope, camp: resetState.camp})
+    });
+    const data = await resp.json();
+    if (!data || !data.ok) throw new Error((data && data.error) || 'сервер не смог выполнить сброс');
+    const n = Number(data.archived) || 0;
+    toast('Готово: в архив — ' + n + ' ' + plural(n, 'заявка', 'заявки', 'заявок') + (data.sheet ? ' (лист «' + data.sheet + '»)' : ''));
+    closeReset();
+    enrolledDevice = null;
+    try { store.set('artek_enrolled', 'null'); } catch(_e){}
+    takenMap = null;
+    paintEnrollBox();
+    refreshAdmin();
+    loadEnrollCounts(true);
+  } catch(err){
+    toast('Сброс не удался: ' + (err && err.message));
+  } finally {
+    resetBusy = false;
+    ['#resetCancel', '#resetBackup', '#resetGo'].forEach(sel => { $(sel).disabled = false; });
+    goBtn.textContent = 'Завершить без копии';
+  }
+}
+$('#resetBackup').addEventListener('click', () => doReset(true));
+$('#resetGo').addEventListener('click', () => doReset(false));
 
 /* ============================================================
    ИНИЦИАЛИЗАЦИЯ
