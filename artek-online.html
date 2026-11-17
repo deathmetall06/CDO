@@ -538,9 +538,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
    При каждом открытии страницы (а далее — каждые 5 минут и при
    возврате на вкладку) сайт скачивает мастер-таблицу прямо с
    Яндекс.Диска. Методисту достаточно просто править файл на
-   Диске — перекладывать ничего никуда не нужно. Запросы идут
-   с полным запретом кэша браузера, поэтому на сайте всегда
-   видна та версия файла, что сейчас лежит на Диске.
+   Диске — перекладывать ничего никуда не нужно.
+   Две ловушки, которые пришлось обойти:
+   1) кэш браузера — он подсовывал старый ответ Яндекса;
+      лечится запретом кэша и меткой времени в запросе;
+   2) антихотлинк Диска — если в запросе файла виден чужой сайт
+      (заголовок Referer), Диск отвечает 403 без CORS-заголовков
+      и скачивание «ломается». Лечится опцией referrerPolicy:
+      'no-referrer' — сайт не сообщает свой адрес при скачивании.
    Если Диск недоступен, сайт не падает, а берёт данные по
    цепочке резервов: 1) data.xlsx рядом со страницей,
    2) последняя удачная копия в этом браузере,
@@ -796,15 +801,22 @@ function fmtLoadedAt(d){
 }
 let yandexStamp = '';   // когда файл последний раз менялся на Диске
 async function loadTableFromYandex(){
-  /* _t и cache:'no-store' — чтобы браузер не подсовывал старый
-     ответ из своего кеша (причина прошлых «не обновляется») */
+  /* _t и cache:'no-store' — не дать браузеру подсовывать старый
+     ответ из кэша; referrerPolicy:'no-referrer' — не показывать
+     наш сайт в запросе, иначе антихотлинк Диска отдаёт 403 */
   const api = 'https://cloud-api.yandex.net/v1/disk/public/resources?public_key='
             + encodeURIComponent(YANDEX_PUBLIC_KEY) + '&_t=' + Date.now();
-  const metaResp = await fetchTimeout(api, 12000, {cache: 'no-store'});
+  const metaResp = await fetchTimeout(api, 12000, {cache: 'no-store', referrerPolicy: 'no-referrer'});
   if (!metaResp.ok) throw new Error('Яндекс.Диск: HTTP ' + metaResp.status);
   const meta = await metaResp.json();
   if (!meta || !meta.file) throw new Error('Яндекс.Диск не отдал ссылку на файл');
-  const resp = await fetchTimeout(meta.file, 20000, {cache: 'no-store'});
+  let resp;
+  try {
+    resp = await fetchTimeout(meta.file, 20000, {cache: 'no-store', referrerPolicy: 'no-referrer'});
+  } catch(e){
+    console.warn('artek: скачивание таблицы с Диска не удалось —', e && e.message);
+    throw e;
+  }
   if (!resp.ok) throw new Error('Файл таблицы: HTTP ' + resp.status);
   const buf = new Uint8Array(await resp.arrayBuffer());
   if (buf.length < 1000) throw new Error('Файл таблицы подозрительно мал');
@@ -817,7 +829,7 @@ async function withRetry(fn, attempts){
   let err = null;
   for (let i = 0; i < attempts; i++){
     if (i) await new Promise(r => setTimeout(r, 700 * i));
-    try { return await fn(); } catch(e){ err = e; }
+    try { return await fn(); } catch(e){ err = e; console.warn('artek: попытка ' + (i + 1) + ' —', e && e.message); }
   }
   throw err || new Error('Не удалось загрузить данные');
 }
