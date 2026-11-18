@@ -1029,7 +1029,39 @@ async function parseXlsx(u8){
     }
     break;
   }
-  return {rows: main.rows, photosKey: photosKey, enrollScript: enrollScript, streams: streamsRaw, pairs: pairsRaw};
+  /* лист «Набор» (необязательный): матрица «студия × лагерь» отдельным
+     листом. В строке шапки: колонка «Код …» + колонки с названиями
+     лагерей («Янтарный», «ХРУ»…). Галочка в ячейке = студия доступна
+     лагерю. Если листа нет — берутся колонки-лагеря справа на «Студиях». */
+  const nabor = {};
+  for (const nm of ['Набор', 'Набор студий', 'Набор лагерей']){
+    const st = await sheetRows(nm);
+    if (!st) continue;
+    let headIdx = -1, codeIdx = -1;
+    const campColsN = [];
+    for (let i = 0; i < st.rows.length && headIdx < 0; i++){
+      const r = st.rows[i];
+      const keys = Object.keys(r).map(Number).sort((a, b) => a - b);
+      let ci = -1;
+      const camps = [];
+      for (const k of keys){
+        const h = String(r[k] || '').trim().toLowerCase().replace(/ё/g, 'е')
+          .replace(/^лагер[ья]\s+/, '').replace(/[\s\u00A0]+/g, ' ').trim();
+        if (ci < 0 && /^код/.test(h)) ci = k;
+        else if (CAMP_ALIASES[h]) camps.push({idx: k, camp: CAMP_ALIASES[h]});
+      }
+      if (ci >= 0 && camps.length){ headIdx = i; codeIdx = ci; campColsN.push(...camps); }
+    }
+    if (headIdx < 0) continue;
+    for (let i = headIdx + 1; i < st.rows.length; i++){
+      const r = st.rows[i];
+      const code = String(r[codeIdx] || '').trim();
+      if (!code || code.charAt(0) === '=') continue;
+      nabor[code.toLowerCase()] = campColsN.filter(cc => truthyCell(r[cc.idx])).map(cc => cc.camp);
+    }
+    break;
+  }
+  return {rows: main.rows, photosKey: photosKey, enrollScript: enrollScript, streams: streamsRaw, pairs: pairsRaw, nabor: nabor};
 }
 
 /* галочка в ячейке матрицы: TRUE / да / + / 1 / x / v / ✓ — «да»; нет / 0 / пусто — «нет» */
@@ -1040,7 +1072,7 @@ function truthyCell(v){
   return true;
 }
 
-function tableToStudios(rows){
+function tableToStudios(rows, nabor){
   const COLS = ['Код (для фото)','Название студии','Направление','Возраст от','Мест в группе',
                 'Справка F1','Работает в этом месяце','Педагоги и площадки',
                 'Описание (для детей)','Чему научатся','Результат'];
@@ -1101,7 +1133,15 @@ function tableToStudios(rows){
       skills,
       result: (r[c('Результат')] || '').trim()
     });
-    if (validStudio(s)) out.push(s);
+    if (validStudio(s)){
+      /* лист «Набор» главнее колонок-лагерей на листе «Студии»:
+         если для кода есть строка — берём список лагерей оттуда
+         (пустая строка = студия скрыта от всех лагерей) */
+      if (nabor && Object.prototype.hasOwnProperty.call(nabor, code.toLowerCase())){
+        s.avail = nabor[code.toLowerCase()].slice();
+      }
+      out.push(s);
+    }
   }
   return out;
 }
@@ -1131,7 +1171,7 @@ async function loadTableFromFile(){
   if (buf.length < 1000) throw new Error('data.xlsx подозрительно мал');
   const parsed = await parseXlsx(buf);
   applyTableMeta(parsed);
-  return tableToStudios(parsed.rows);
+  return tableToStudios(parsed.rows, parsed.nabor);
 }
 
 /* ---------- живой источник: Яндекс.Диск ---------- */
@@ -1170,7 +1210,7 @@ async function loadTableFromYandex(){
   if (buf.length < 1000) throw new Error('Файл таблицы подозрительно мал');
   const parsed = await parseXlsx(buf);
   applyTableMeta(parsed);
-  const list = tableToStudios(parsed.rows);
+  const list = tableToStudios(parsed.rows, parsed.nabor);
   yandexStamp = fmtStamp(meta.modified);
   return list;
 }
