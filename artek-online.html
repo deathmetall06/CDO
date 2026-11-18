@@ -787,6 +787,8 @@ function normalizeStudio(s){
     min: (s.min == null || s.min === '' || isNaN(parseInt(s.min, 10))) ? null : parseInt(s.min, 10),
     cap: parseInt(s.cap, 10) || 0,
     stream: (parseInt(s.stream, 10) >= 1 && parseInt(s.stream, 10) <= 9) ? parseInt(s.stream, 10) : 0,
+    /* локация (где студия проходит физически) — колонка «Локация» листа «Студии» */
+    loc: String(s.loc || ''),
     /* матрица «студия × лагерь»: null — матрицы нет в таблице, [] — есть, но галочек нет */
     avail: Array.isArray(s.avail) ? s.avail.map(x => String(x)) : null,
     f: s.f === 'F1' ? 'F1' : undefined,
@@ -1073,8 +1075,11 @@ function truthyCell(v){
 }
 
 function tableToStudios(rows, nabor){
+  /* колонки, без которых файл не читается. Колонки «Работает в этом месяце»
+     и «Локация» — НЕобязательные: первая устарела (набор теперь на листе
+     «Набор»), вторая появилась в новой версии файла */
   const COLS = ['Код (для фото)','Название студии','Направление','Возраст от','Мест в группе',
-                'Справка F1','Работает в этом месяце','Педагоги и площадки',
+                'Справка F1','Педагоги и площадки',
                 'Описание (для детей)','Чему научатся','Результат'];
   const headIdx = rows.findIndex(r => Object.keys(r).some(k => (r[k] || '').trim() === 'Код (для фото)'));
   if (headIdx < 0) throw new Error('В таблице нет строки шапки');
@@ -1099,8 +1104,11 @@ function tableToStudios(rows, nabor){
     const r = rows[i];
     const code = (r[c('Код (для фото)')] || '').trim();
     if (!code || code.charAt(0) === '=') continue;          // итоговая строка и формулы пропускаются
-    const active = (r[c('Работает в этом месяце')] || 'да').trim().toLowerCase();
-    if (active === 'нет') continue;                          // студия «выключена» на месяц
+    /* колонки «Работает в этом месяце» больше нет: показ/скрытие решают
+       галочки листа «Набор». Если встретится старый файл с этой колонкой —
+       «нет» по-прежнему скрывает студию */
+    const workIdx = col['Работает в этом месяце'];
+    if (workIdx != null && String(r[workIdx] || '').trim().toLowerCase() === 'нет') continue;
     const groups = String(r[c('Педагоги и площадки')] || '').split('\n')
       .map(x => x.trim()).filter(Boolean)
       .map(line => {
@@ -1118,6 +1126,7 @@ function tableToStudios(rows, nabor){
       : null;
     const minRaw = String(r[c('Возраст от')] || '').trim();
     const title = (r[c('Название студии')] || '').trim();
+    const loc = col['Локация'] != null ? String(r[col['Локация']] || '').trim() : '';
     if (/^итого/i.test(title)) continue;                     // служебная строка «Итого студий»
     const s = normalizeStudio({
       id: code,
@@ -1128,6 +1137,7 @@ function tableToStudios(rows, nabor){
       stream: streamNo,
       avail: avail,
       f: ((r[c('Справка F1')] || '').trim().toLowerCase() === 'да') ? 'F1' : undefined,
+      loc: loc,
       groups,
       desc: (r[c('Описание (для детей)')] || '').trim(),
       skills,
@@ -1501,6 +1511,15 @@ function buildPhotoMap(items, codes){
     buckets[k].list.sort((a, b) => a.num - b.num);
     map[buckets[k].code] = buckets[k].list.slice(0, 3).map(p => p.url);
   }
+  /* разбитые студии (КОД2, КОД3): своих фото нет — наследуем фото базового
+     кода. Например, fotovidenie2 без своих файлов показывает фото fotovidenie */
+  for (const c of codes){
+    if (map[c] && map[c].length) continue;
+    const m = /^(.+?)(\d+)$/.exec(String(c));
+    if (!m || !m[1]) continue;
+    const base = m[1];
+    if (codes.indexOf(base) >= 0 && map[base] && map[base].length) map[c] = map[base].slice();
+  }
   return map;
 }
 
@@ -1755,7 +1774,9 @@ function paintEnrollBox(){
   const box = $('#enrollBox');
   if (!box) return;
   const s = currentId ? byId(currentId) : null;
-  if (!s || !enrollKey){ box.hidden = true; return; }
+  /* просмотр без выбранного лагеря («Посмотреть все студии») — для взрослых,
+     запись выключена: сначала лагерь, потом запись */
+  if (!s || !enrollKey || !campFilter){ box.hidden = true; return; }
   box.hidden = false;
   const btn = $('#enrollBtn');
   const btnText = $('#enrollBtnText');
@@ -3154,6 +3175,8 @@ $('#resetGo').addEventListener('click', () => doReset(false));
 buildSlots();
 if (!lsOK) degradeBadge.hidden = false;
 bootData();
+recalcMatrix();   // если в сохранённой копии есть галочки «Набора», фильтр лагеря работает сразу —
+                  // до первого обновления с Диска (оно может не перерисовать список, если данные не изменились)
 (function init(){
   const saved = parseInt(store.get('artek_age') || '', 10);
   if (saved >= 8 && saved <= 17){
