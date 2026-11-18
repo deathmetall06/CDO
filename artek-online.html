@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="data:,">
-<!-- Версия с данными и фото из Яндекс.Диска · ревизия 5 (потоки: у каждого потока — свой набор студий; + мобильная версия, запись: 1 ребёнок — 1 студия, выгрузка Excel по лагерям, завершение набора с архивом): https://disk.yandex.ru/i/_E2ixQvDdn5jZQ -->
+<!-- Версия с данными и фото из Яндекс.Диска · ревизия 6 (матрица «студия × лагерь»; запись: 1 ребёнок — 1 студия; счётчик студий на первом экране обновляется сам): https://disk.yandex.ru/i/_E2ixQvDdn5jZQ -->
 <title>Артек · Найди свою студию</title>
 <style>
 /* ============================================================
@@ -399,6 +399,21 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .admin-row{border:1px solid rgba(29,29,31,.08);border-radius:12px;padding:10px 14px;display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
 .admin-row b{font-size:14.5px}
 .admin-row .meta{font-size:12px;color:rgba(29,29,31,.55);white-space:nowrap}
+#adminPanel{flex:1 1 auto;min-height:0;overflow-y:auto}
+.admin-sum{margin:2px 0}
+.admin-sum-title{font-size:13.5px;font-weight:700;margin:0 0 8px}
+.admin-sum-title .admin-sum-note{font-weight:500;color:rgba(29,29,31,.55)}
+.admin-sum-wrap{max-height:40vh;overflow:auto;border:1px solid rgba(29,29,31,.1);border-radius:12px;-webkit-overflow-scrolling:touch}
+.admin-sum-table{border-collapse:collapse;width:100%;font-size:12.5px;min-width:560px}
+.admin-sum-table th,.admin-sum-table td{border-bottom:1px solid rgba(29,29,31,.07);padding:6px 9px;text-align:center;white-space:nowrap}
+.admin-sum-table th{position:sticky;top:0;background:#f4f4ee;font-size:11.5px;z-index:2}
+.admin-sum-table td:first-child,.admin-sum-table th:first-child{position:sticky;left:0;background:#fff;text-align:left;font-weight:600;max-width:230px;overflow:hidden;text-overflow:ellipsis}
+.admin-sum-table th:first-child{z-index:3;background:#f4f4ee}
+.admin-sum-table .num{font-variant-numeric:tabular-nums}
+.admin-sum-table .num.zero{color:rgba(29,29,31,.3)}
+.admin-sum-table .tot{font-weight:700}
+.admin-sum-table tfoot td{font-weight:700;background:#faf9f4;border-top:2px solid rgba(29,29,31,.14)}
+.admin-sum-empty{font-size:12.5px;color:rgba(29,29,31,.55);margin:0}
 .admin-empty{color:rgba(29,29,31,.5);font-size:14px;padding:18px 0;text-align:center}
 .admin-hint-ok{color:#0a7a3d;font-weight:600}
 .admin-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px}
@@ -490,7 +505,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
       <div class="age-inner">
         <p class="eyebrow">ФГБОУ МДЦ «Артек» · Центр дополнительного образования</p>
         <h1 class="age-title">Найди свою студию<br>в&nbsp;Артеке</h1>
-        <p class="age-sub">51 студия творчества, науки, техники и спорта. Напиши, сколько тебе лет, — и мы покажем, куда ты можешь записаться.</p>
+        <p class="age-sub"><span id="studioCountLine">51 студия творчества, науки, техники и спорта.</span> Напиши, сколько тебе лет, — и мы покажем, куда ты можешь записаться.</p>
         <div class="age-field-row">
           <label class="age-field" for="ageInput">
             <input id="ageInput" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" placeholder="—" aria-label="Твой возраст, от 8 до 17 лет">
@@ -704,6 +719,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
       </div>
       <p class="admin-total" id="adminTotal"></p>
       <div class="admin-list" id="adminList" aria-live="polite"></div>
+      <div class="admin-sum" id="adminSummary" aria-live="polite"></div>
       <div class="admin-reset">
         <p class="admin-reset-title">Завершить набор</p>
         <p class="crop-hint">Заявки переедут в архивный лист таблицы Google — ничего не потеряется, а на сайте снова откроются все места. Дети эту кнопку не видят.</p>
@@ -1241,6 +1257,14 @@ function pluralStudiy(n){
   if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return 'студии';
   return 'студий';
 }
+/* число студий на первом экране — обновляется из загруженной таблицы,
+   чтобы надпись не устаревала при добавлении новых студий */
+function paintStudioCount(){
+  const el = document.getElementById('studioCountLine');
+  if (!el || !STUDIOS.length) return;
+  const n = STUDIOS.length;
+  el.textContent = n + ' ' + pluralStudiy(n) + ' творчества, науки, техники и спорта.';
+}
 function setSourceBadge(text, kind){
   sourceBadge.textContent = text;
   sourceBadge.dataset.kind = kind || '';
@@ -1302,6 +1326,7 @@ async function refreshData(force){
   const n = list.length;
   badgeState = {kind: src === 'yandex' ? 'ok' : 'warn', cnt: n, stamp: yandexStamp};
   paintBadge();
+  paintStudioCount();
   if (changed && age != null) renderList();
   syncStreamChips();
   if (changed && activeScreen === 'screen-studio'){
@@ -3033,6 +3058,7 @@ function renderAdmin(){
     + opts.map(o => '<option value="' + esc(o.code) + '">' + esc(o.title) + ' · ' + o.n + '</option>').join('');
   if (prev && counts[prev]) adminStudioEl.value = prev;
   if (!opts.length) adminHintEl.textContent = '';
+  renderSummary();
   paintAdminList();
 }
 
@@ -3063,6 +3089,62 @@ function paintAdminList(){
       + '<span class="meta">' + esc(title) + ' · ' + esc(a.camp || '') + ' · отряд ' + esc(a.squad || '—') + when + '</span></div>';
   }).join('');
 }
+
+/* ---------- сводка записи: по каждой студии и по каждому лагерю ----------
+   Собирается из тех же заявок, что и список ниже: сколько детей записалось
+   в каждую студию, с разбивкой по лагерям; справа — общее число по студии,
+   внизу — итог по каждому лагерю. */
+function renderSummary(){
+  const el = $('#adminSummary');
+  if (!el) return;
+  const apps = adminApps || [];
+  if (!apps.length){
+    el.innerHTML = '<p class="admin-sum-title">Сводка записи</p>'
+      + '<p class="admin-sum-empty">Записавшихся пока нет. Как только дети начнут записываться, здесь появится таблица: сколько детей записалось в каждой студии и в каждом лагере. Цифры обновляются сами.</p>';
+    return;
+  }
+  const per = {};                 /* код студии → {лагерь → сколько детей} */
+  apps.forEach(a => {
+    const c = normCamp(a.camp || '');
+    if (!c) return;
+    const row = per[a.code] = per[a.code] || {};
+    row[c] = (row[c] || 0) + 1;
+  });
+  const totalOf = code => {
+    const row = per[code];
+    let n = 0;
+    for (const c in row) n += row[c];
+    return n;
+  };
+  const rows = STUDIOS.filter(s => totalOf(s.id) > 0);
+  rows.sort((x, y) => totalOf(y.id) - totalOf(x.id) || String(x.title).localeCompare(String(y.title), 'ru'));
+  const campTotals = {};
+  apps.forEach(a => { const c = normCamp(a.camp || ''); if (c) campTotals[c] = (campTotals[c] || 0) + 1; });
+  const shortCamp = c => (c.length > 6 ? c.slice(0, 6) + '.' : c);
+  let html = '<p class="admin-sum-title">Сводка записи <span class="admin-sum-note">— записалось детей: ' + apps.length + ' · студий с записями: ' + rows.length + ' из ' + STUDIOS.length + '</span></p>';
+  html += '<div class="admin-sum-wrap"><table class="admin-sum-table"><thead><tr><th>Студия</th>'
+    + CAMP_LIST.map(c => '<th title="' + esc(c) + '">' + esc(shortCamp(c)) + '</th>').join('')
+    + '<th>Всего</th><th title="Мест в группе">Мест</th></tr></thead><tbody>';
+  rows.forEach(s => {
+    const row = per[s.id] || {};
+    let n = 0;
+    for (const c in row) n += row[c];
+    html += '<tr><td title="' + esc(s.title) + '">' + esc(s.title) + '</td>'
+      + CAMP_LIST.map(c => {
+          const v = row[normCamp(c)] || 0;
+          const marked = Array.isArray(s.avail) && s.avail.indexOf(c) >= 0;
+          const tip = (!v && !marked) ? ' title="Не отмечена на листе «Набор»"' : '';
+          return '<td class="num' + (v ? '' : ' zero') + '"' + tip + '>' + (v || '·') + '</td>';
+        }).join('')
+      + '<td class="num tot">' + n + '</td>'
+      + '<td class="num">' + (s.cap ? s.cap : '—') + '</td></tr>';
+  });
+  html += '</tbody><tfoot><tr><td>Итого по лагерю</td>'
+    + CAMP_LIST.map(c => { const v = campTotals[normCamp(c)] || 0; return '<td class="num">' + (v || '·') + '</td>'; }).join('')
+    + '<td class="num">' + apps.length + '</td><td></td></tr></tfoot></table></div>';
+  el.innerHTML = html;
+}
+
 adminStudioEl.addEventListener('change', paintAdminList);
 adminCampEl.addEventListener('change', paintAdminList);
 adminSearchEl.addEventListener('input', paintAdminList);
@@ -3175,6 +3257,7 @@ $('#resetGo').addEventListener('click', () => doReset(false));
 buildSlots();
 if (!lsOK) degradeBadge.hidden = false;
 bootData();
+paintStudioCount();   // счётчик студий на первом экране (обновится и после загрузки с Диска)
 recalcMatrix();   // если в сохранённой копии есть галочки «Набора», фильтр лагеря работает сразу —
                   // до первого обновления с Диска (оно может не перерисовать список, если данные не изменились)
 (function init(){
