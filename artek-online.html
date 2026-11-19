@@ -2839,8 +2839,10 @@ function studioLocOf(code){
   return (st && st.loc) || '';
 }
 function pushStudioBlock(rows, title, apps, allCamps, loc){
-  rows.push([{v: title + ' (' + apps.length + ' ' + plural(apps.length, 'человек', 'человека', 'человек') + ')', b: 1}]);
-  rows.push([{v: 'Локация: ' + (loc || 'не указана'), b: 1}]);
+  /* локация — в строку заголовка блока, без отдельной строки: компактно */
+  const head = title + ' (' + apps.length + ' ' + plural(apps.length, 'человек', 'человека', 'человек') + ')'
+    + (loc ? ' · Локация: ' + loc : '');
+  rows.push([{v: head, b: 1}]);
   rows.push(allCamps ? [{v: 'Лагерь'}, {v: 'Отряд'}, {v: 'Имя и фамилия'}] : [{v: 'Отряд'}, {v: 'Имя и фамилия'}]);
   apps.slice()
     .sort((a, b) => (parseInt(a.squad, 10) || 0) - (parseInt(b.squad, 10) || 0)
@@ -2890,15 +2892,15 @@ function makeExportSheets(list, allCamps){
   ];
 }
 function makeBackupSheet(list){
-  const rows = [[{v: 'Время', b: 1}, {v: 'Лагерь', b: 1}, {v: 'Отряд', b: 1}, {v: 'Фамилия', b: 1}, {v: 'Имя', b: 1}, {v: 'Студия', b: 1}, {v: 'Локация', b: 1}]];
+  const rows = [[{v: 'Время', b: 1}, {v: 'Лагерь', b: 1}, {v: 'Отряд', b: 1}, {v: 'Фамилия', b: 1}, {v: 'Имя', b: 1}, {v: 'Студия', b: 1}]];
   list.slice().sort((a, b) => String(a.ts || '').localeCompare(String(b.ts || ''))).forEach(a => {
     const d = a.ts ? new Date(a.ts) : null;
     const when = d && !isNaN(d.getTime())
       ? pad2(d.getDate()) + '.' + pad2(d.getMonth() + 1) + '.' + d.getFullYear() + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes())
       : '';
-    rows.push([when, a.camp || '', parseInt(a.squad, 10) || a.squad || '', a.last || '', a.first || '', studioTitleOf(a.code, a.title), studioLocOf(a.code)]);
+    rows.push([when, a.camp || '', parseInt(a.squad, 10) || a.squad || '', a.last || '', a.first || '', studioTitleOf(a.code, a.title)]);
   });
-  return {name: 'Заявки', cols: [18, 16, 8, 24, 18, 36, 28], rows: rows};
+  return {name: 'Заявки', cols: [18, 16, 8, 24, 18, 36], rows: rows};
 }
 
 /* ============================================================
