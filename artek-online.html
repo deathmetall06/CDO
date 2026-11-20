@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="data:,">
-<!-- Версия с данными и фото из Яндекс.Диска · ревизия 6 (матрица «студия × лагерь»; запись: 1 ребёнок — 1 студия; счётчик студий на первом экране обновляется сам): https://disk.yandex.ru/i/_E2ixQvDdn5jZQ -->
+<!-- Версия с данными и фото из Яндекс.Диска · ревизия 7 («Завершить набор» возвращает сайт к виду «как для нового гостя»; фото — только с Яндекс.Диска, поле загрузки и Ctrl+Q убраны; запись: 1 ребёнок — 1 студия): https://disk.yandex.ru/i/_E2ixQvDdn5jZQ -->
 <title>Артек · Найди свою студию</title>
 <style>
 /* ============================================================
@@ -219,25 +219,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .photo-col{width:40%;flex:none;display:flex;flex-direction:column;gap:7px;padding:16px 4px 16px 16px;position:relative;min-height:0}
 .photo-slot{position:relative;flex:1;min-height:0;border-radius:14px;overflow:hidden;background:var(--bg)}
 .photo-slot img{width:100%;height:100%;object-fit:cover;display:block}
-.slot-empty{
-  position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
-  border:1.5px dashed rgba(29,29,31,.2);border-radius:14px;color:rgba(29,29,31,.45);
-  font-size:clamp(10.5px,1cqw,13px);text-align:center;padding:10px;cursor:pointer;
-  background:rgba(245,245,247,.6);transition:border-color .18s,color .18s,background .18s;
-}
-.slot-empty:hover{border-color:var(--blue);color:var(--blue);background:rgba(0,87,184,.04)}
-.slot-empty svg{opacity:.55}
-.photo-slot.dragover{box-shadow:inset 0 0 0 3px var(--blue)}
-.frame.editing .photo-slot.has-img{box-shadow:inset 0 0 0 2px rgba(0,87,184,.35)}
-.frame.editing .photo-slot.has-img.dragover{box-shadow:inset 0 0 0 3px var(--blue)}
-.slot-del{
-  position:absolute;top:8px;right:8px;width:32px;height:32px;border-radius:50%;border:0;cursor:pointer;
-  background:rgba(29,29,31,.62);color:#fff;font-size:17px;line-height:1;
-  display:flex;align-items:center;justify-content:center;
-  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
-  transition:transform .15s var(--ease),background .15s;
-}
-.slot-del:hover{background:var(--red);transform:scale(1.1)}
 .back-btn{
   position:absolute;top:14px;left:14px;z-index:6;
   display:inline-flex;align-items:center;gap:7px;min-height:42px;padding:0 16px;
@@ -273,32 +254,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
   border-left:4px solid var(--acc-c,var(--blue));border-radius:12px;padding:12px 16px;
   font-size:clamp(12.5px,1.25cqw,15px);line-height:1.5;color:rgba(29,29,31,.85);font-weight:500;
 }
-
-/* --- режим редактирования --- */
-.frame.editing [contenteditable="true"]{
-  outline:1.5px dashed color-mix(in srgb,var(--acc-c,var(--blue)) 60%,transparent);
-  outline-offset:3px;border-radius:6px;cursor:text;
-  background:transparent;background:color-mix(in srgb,var(--acc-c,var(--blue)) 5%,transparent);
-  transition:background .15s,outline-color .15s;
-}
-.frame.editing [contenteditable="true"]:focus{outline-style:solid;background:transparent}
-.edit-panel{
-  position:absolute;top:14px;right:14px;z-index:9;width:min(280px,44%);
-  background:rgba(255,255,255,.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-  border:1px solid rgba(29,29,31,.08);border-radius:16px;padding:14px 16px;
-  box-shadow:var(--shadow-2);display:flex;flex-direction:column;gap:8px;
-  animation:panelIn .25s var(--ease);
-}
-@keyframes panelIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
-.edit-panel[hidden]{display:none}
-.ep-title{font-weight:700;font-size:14px}
-.ep-hint{font-size:11.5px;color:rgba(29,29,31,.55);line-height:1.45}
-.ep-row{display:flex;flex-direction:column;gap:4px;margin-top:2px}
-.ep-row label{font-size:11px;font-weight:600;color:rgba(29,29,31,.5)}
-.edit-panel select{min-height:40px;border-radius:10px;border:1.5px solid rgba(29,29,31,.14);padding:0 10px;font:inherit;font-size:13px;background:#fff;outline:0;transition:border-color .15s}
-.edit-panel select:focus{border-color:var(--blue)}
-.btn-done{margin-top:4px;min-height:40px;border-radius:12px;border:0;cursor:pointer;background:var(--ink);color:#fff;font-weight:700;font-size:13px;transition:transform .15s var(--ease),box-shadow .15s}
-.btn-done:hover{transform:translateY(-1px);box-shadow:var(--shadow-1)}
 
 /* ---------- служебные элементы рамки ---------- */
 .print-btn{
@@ -336,7 +291,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 }
 .toast.show{opacity:1;translate:-50% -6px}
 
-/* ---------- модалка кадрирования ---------- */
+/* ---------- модальные окна (общие стили) ---------- */
 .crop-overlay{
   position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;
   background:rgba(29,29,31,.45);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
@@ -347,21 +302,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .crop-modal{background:#fff;border-radius:20px;padding:18px 20px;width:min(940px,94vw);max-height:94vh;box-shadow:0 30px 90px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:10px}
 .crop-title{font-weight:700;font-size:16px}
 .crop-hint{font-size:12px;color:rgba(29,29,31,.55)}
-.crop-area{display:flex;align-items:center;justify-content:center;height:min(56vh,540px);background:var(--bg);border-radius:14px;overflow:hidden;position:relative}
-.crop-stage{position:relative;touch-action:none;user-select:none;-webkit-user-select:none;box-shadow:0 4px 18px rgba(29,29,31,.18);line-height:0}
-.crop-stage img{display:block;pointer-events:none;max-width:none}
-.crop-sel{position:absolute;border:1.5px solid #fff;box-shadow:0 0 0 9999px rgba(29,29,31,.55);cursor:move}
-.crop-sel .grid{position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.3) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.3) 1px,transparent 1px);background-size:33.34% 33.34%;background-position:-1px -1px}
-.h{position:absolute;background:#fff;border-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,.4)}
-.h.n,.h.s{left:20%;right:20%;height:8px;cursor:ns-resize}
-.h.n{top:-4px}.h.s{bottom:-4px}
-.h.w,.h.e{top:20%;bottom:20%;width:8px;cursor:ew-resize}
-.h.w{left:-4px}.h.e{right:-4px}
-.h.nw,.h.ne,.h.sw,.h.se{width:14px;height:14px;border-radius:50%}
-.h.nw{left:-7px;top:-7px;cursor:nwse-resize}
-.h.se{right:-7px;bottom:-7px;cursor:nwse-resize}
-.h.ne{right:-7px;top:-7px;cursor:nesw-resize}
-.h.sw{left:-7px;bottom:-7px;cursor:nesw-resize}
 .crop-actions{display:flex;justify-content:flex-end;gap:10px}
 
 /* ---------- запись на студию ---------- */
@@ -435,8 +375,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
   .studio-grid{flex-direction:column}
   .photo-col{width:100%;flex:none;height:21%;min-height:96px;flex-direction:row;padding:12px;gap:7px}
   .photo-slot{width:33.333%;flex:none;height:100%}
-  .slot-empty{font-size:9px;padding:4px;gap:4px}
-  .slot-empty svg{width:16px;height:16px}
   .studio-body{width:100%;flex:1}
 }
 
@@ -481,7 +419,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
   .stage{height:auto;display:block;padding:0}
   .frame{width:100%;height:100vh;max-width:none;aspect-ratio:auto;border-radius:0;box-shadow:none;overflow:hidden}
   .print-hide{display:none !important}
-  .slot-empty{display:none !important}
   .photo-slot:not(.has-img){display:none !important}
   .screen{display:none !important}
   .screen.active{display:flex !important;animation:none !important}
@@ -607,21 +544,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
           </div>
         </div>
       </div>
-      <div class="edit-panel print-hide" id="editPanel" hidden>
-        <p class="ep-title">Режим редактирования</p>
-        <p class="ep-hint">Внесите изменения и нажмите «Готово»</p>
-        <div class="ep-row">
-          <label for="accentSelect">Тип студии (акцент)</label>
-          <select id="accentSelect">
-            <option value="">По категории (по умолчанию)</option>
-            <option value="Художественная">Художественная</option>
-            <option value="Техническая">Техническая</option>
-            <option value="Естественно-научная">Естественно-научная</option>
-            <option value="Физкультурно-спортивная">Физкультурно-спортивная</option>
-          </select>
-        </div>
-        <button id="editDone" class="btn-done" type="button">Готово</button>
-      </div>
     </section>
 
     <div class="degrade-badge print-hide" id="degradeBadge" hidden>Изменения не сохранятся в этом браузере</div>
@@ -631,34 +553,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
       <span>Печать</span>
     </button>
   </main>
-</div>
-
-<!-- Модалка кадрирования -->
-<div class="crop-overlay print-hide" id="cropOverlay" hidden>
-  <div class="crop-modal" role="dialog" aria-modal="true" aria-label="Кадрирование фото">
-    <p class="crop-title">Кадрирование фото</p>
-    <p class="crop-hint">Переместите и измените размер области, затем нажмите «Применить»</p>
-    <div class="crop-area" id="cropArea">
-      <div class="crop-stage" id="cropStage">
-        <img id="cropImg" alt="Превью фото для кадрирования">
-        <div class="crop-sel" id="cropSel">
-          <span class="grid" aria-hidden="true"></span>
-          <span class="h n" data-h="n" aria-hidden="true"></span>
-          <span class="h s" data-h="s" aria-hidden="true"></span>
-          <span class="h w" data-h="w" aria-hidden="true"></span>
-          <span class="h e" data-h="e" aria-hidden="true"></span>
-          <span class="h nw" data-h="nw" aria-hidden="true"></span>
-          <span class="h ne" data-h="ne" aria-hidden="true"></span>
-          <span class="h sw" data-h="sw" aria-hidden="true"></span>
-          <span class="h se" data-h="se" aria-hidden="true"></span>
-        </div>
-      </div>
-    </div>
-    <div class="crop-actions">
-      <button id="cropCancel" class="btn-ghost" type="button">Отмена</button>
-      <button id="cropApply" class="btn-primary" type="button">Применить</button>
-    </div>
-  </div>
 </div>
 
 <div class="toast print-hide" id="toast" role="status" aria-live="polite"></div>
@@ -752,8 +646,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
     </div>
   </div>
 </div>
-
-<input type="file" id="filePick" accept="image/*" hidden>
 
 <script>
 'use strict';
@@ -1388,7 +1280,6 @@ const DIRS = ['Художественная','Техническая','Есте�
 const $  = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const clampN = (v,a,b) => Math.min(b, Math.max(a, v));
 const byId = id => STUDIOS.find(s => s.id === id);
 function plural(n, one, few, many){
   const m10 = n % 10, m100 = n % 100;
@@ -1396,10 +1287,6 @@ function plural(n, one, few, many){
   if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
   return many;
 }
-function cleanText(t){
-  return String(t || '').replace(/\u00A0/g,' ').split('\n').map(x => x.trim()).filter(Boolean).join(' ').trim();
-}
-
 /* --- localStorage с деградацией --- */
 let lsOK = true;
 try { localStorage.setItem('__artek_t','1'); localStorage.removeItem('__artek_t'); } catch(e){ lsOK = false; }
@@ -1407,30 +1294,6 @@ const store = {
   get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
   set(k,v){ try { localStorage.setItem(k,v); return true; } catch(e){ return false; } }
 };
-const memPhotos = {}; // fallback, если localStorage недоступен
-
-function getPhotos(id){
-  if (!lsOK){ if (!memPhotos[id]) memPhotos[id] = [null,null,null]; return memPhotos[id].slice(); }
-  try {
-    const raw = localStorage.getItem('photos_' + id);
-    const a = raw ? JSON.parse(raw) : [null,null,null];
-    if (!Array.isArray(a)) return [null,null,null];
-    return [a[0] || null, a[1] || null, a[2] || null];
-  } catch(e){ return [null,null,null]; }
-}
-function setPhotos(id, arr){
-  if (!lsOK){ memPhotos[id] = arr.slice(); return false; }
-  try { localStorage.setItem('photos_' + id, JSON.stringify(arr)); return true; }
-  catch(e){ memPhotos[id] = arr.slice(); return false; }
-}
-function getEdit(id){
-  try {
-    const raw = store.get('edit_' + id);
-    if (!raw) return null;
-    const o = JSON.parse(raw);
-    return (o && typeof o === 'object') ? o : null;
-  } catch(e){ return null; }
-}
 
 /* ============================================================
    ФОТО С ЯНДЕКС.ДИСКА
@@ -1791,6 +1654,19 @@ async function loadEnrollCounts(force){
     }
     campTakenMap = Object.keys(per).length ? per : null;
     takenMap = counts;
+    /* «Завершить набор» обнулил список на сервере: если студия, на которую
+       записывали с этого устройства, опустела — метка «вы записаны» устарела,
+       и этот гость для сайта снова новый. На устройствах гостей сброс
+       подхватывается при ближайшем обновлении счётчиков. */
+    if (enrolledDevice){
+      const perDev = campTakenMap && campTakenMap[enrolledDevice.code];
+      const campN = enrolledDevice.camp ? normCamp(enrolledDevice.camp) : '';
+      const still = (perDev && campN) ? (Number(perDev[campN]) || 0) : takenCount(enrolledDevice.code);
+      if (!still){
+        enrolledDevice = null;
+        try { store.set('artek_enrolled', 'null'); } catch(_e){}
+      }
+    }
     console.info('artek: заявки получены — студий с записью: ' + Object.keys(counts).length);
     paintEnrollBox();
   } catch(e){
@@ -1979,7 +1855,7 @@ enrollFormEl.addEventListener('submit', async e => {
       return;
     }
     const dup = data && data.dup;
-    enrolledDevice = {code: s.id, title: s.title};
+    enrolledDevice = {code: s.id, title: s.title, camp: camp};
     try { store.set('artek_enrolled', JSON.stringify(enrolledDevice)); } catch(_e){}
     if (takenMap) takenMap[s.id] = takenCount(s.id) + 1;
     closeEnroll();
@@ -1999,8 +1875,7 @@ enrollFormEl.addEventListener('submit', async e => {
 let age = null;
 let activeScreen = ''; // пусто: ни один экран не помечен .active до init
 let currentId = null;
-let currentEdit = null;   // применённый оверлей (defaults + edit_<id>)
-let editMode = false;
+let currentEdit = null;   // данные страницы студии (из таблицы)
 let listScroll = 0;
 const filters = { dir:'all', q:'', hideF1:false, stream:0 };
 /* лагерь ребёнка: выбирается на первом экране и определяет, какие
@@ -2038,15 +1913,10 @@ const stLoc = $('#stLoc');
 const stStream = $('#stStream');
 const stGroups = $('#stGroups'), stDesc = $('#stDesc');
 const stSkills = $('#stSkills'), stResult = $('#stResult');
-const editPanel = $('#editPanel'), accentSelect = $('#accentSelect'), editDone = $('#editDone');
 const degradeBadge = $('#degradeBadge');
 const sourceBadge = $('#sourceBadge');
 const printBtn = $('#printBtn');
-const cropOverlay = $('#cropOverlay'), cropArea = $('#cropArea'), cropStage = $('#cropStage');
-const cropImg = $('#cropImg'), cropSel = $('#cropSel');
-const cropApply = $('#cropApply'), cropCancel = $('#cropCancel');
 const toastEl = $('#toast');
-const filePick = $('#filePick');
 
 /* ============================================================
    ТОСТ
@@ -2307,23 +2177,6 @@ function baseEdit(s){
     accentType: null
   };
 }
-function mergeEdit(base, ed){
-  if (!ed) return base;
-  ['title','catLabel','ageLabel','capLabel','desc','result'].forEach(k => {
-    if (typeof ed[k] === 'string') base[k] = ed[k];
-  });
-  if (Array.isArray(ed.skills)) ed.skills.forEach((v,i) => {
-    if (typeof v === 'string' && i < base.skills.length) base.skills[i] = v;
-  });
-  if (Array.isArray(ed.groups)) ed.groups.forEach((g,i) => {
-    if (g && base.groups[i]){
-      if (typeof g.ped === 'string') base.groups[i].ped = g.ped;
-      if (typeof g.place === 'string') base.groups[i].place = g.place;
-    }
-  });
-  if (typeof ed.accentType === 'string' && DIRECTION_ACCENTS[ed.accentType]) base.accentType = ed.accentType;
-  return base;
-}
 function applyAccent(){
   const t = currentEdit && currentEdit.accentType;
   const s = byId(currentId);
@@ -2332,7 +2185,7 @@ function applyAccent(){
   studioRoot.style.setProperty('--acc-g', acc.g || acc.c);
 }
 function renderStudio(s){
-  currentEdit = mergeEdit(baseEdit(s), getEdit(s.id));
+  currentEdit = baseEdit(s);
   applyAccent();
   stTitle.textContent = currentEdit.title;
   stCat.textContent = currentEdit.catLabel;
@@ -2361,43 +2214,17 @@ function renderStudio(s){
 }
 
 /* ---------- фотоблок ---------- */
+/* Фото приходят с Яндекс.Диска (папка задаётся в листе «Настройки»),
+   поэтому поле загрузки здесь не нужно: слот без фото просто не показывается. */
 function buildSlots(){
   for (let i = 0; i < 3; i++){
     const slot = document.createElement('div');
     slot.className = 'photo-slot'; slot.dataset.slot = i;
-    slot.innerHTML =
-      '<img alt="Фото студии, слот ' + (i+1) + '" hidden>' +
-      '<div class="slot-empty" role="button" tabindex="0" aria-label="Слот ' + (i+1) + ': загрузить фото">' +
-        '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-4.5-4.5L7 20"/></svg>' +
-        '<span class="slot-txt">Перетащите фото или нажмите</span>' +
-      '</div>' +
-      '<button class="slot-del print-hide" type="button" aria-label="Удалить фото" hidden>×</button>';
+    slot.innerHTML = '<img alt="Фото студии, слот ' + (i+1) + '" hidden>';
+    slot.style.display = 'none';   // покажем, когда станет ясно, что фото есть
     photoCol.appendChild(slot);
-
-    const empty = slot.querySelector('.slot-empty');
-    empty.addEventListener('click', () => { if (slotState[i].type === 'empty') pickFile(i); });
-    empty.addEventListener('keydown', e => {
-      if ((e.key === 'Enter' || e.key === ' ') && slotState[i].type === 'empty'){ e.preventDefault(); pickFile(i); }
-    });
-    slot.querySelector('.slot-del').addEventListener('click', () => deletePhoto(i));
-
-    slot.addEventListener('dragover', e => { e.preventDefault(); slot.classList.add('dragover'); });
-    slot.addEventListener('dragleave', () => slot.classList.remove('dragover'));
-    slot.addEventListener('drop', e => {
-      e.preventDefault();
-      slot.classList.remove('dragover');
-      const f = e.dataTransfer.files && e.dataTransfer.files[0];
-      if (!f) return;
-      if (!f.type.startsWith('image/')){ toast('Это не изображение'); return; }
-      if (slotState[i].type === 'file' || slotState[i].type === 'disk'){ toast('Фото из каталога нельзя заменить'); return; }
-      cropOpen(f, i);
-    });
   }
 }
-/* Откуда берутся фото для слотов (по убыванию приоритета):
-   1) папка с Яндекс.Диска (ссылка в листе «Настройки» таблицы);
-   2) файлы Images/КОД-1.jpg…КОД-3.jpg рядом со страницей;
-   3) личные фото этого браузера (режим редактирования). */
 const fileCache = {};
 function checkFile(src){
   return new Promise(res => {
@@ -2414,8 +2241,6 @@ async function resolveSlot(id, n){
   const cands = ['Images/' + id + '-' + n + '.jpg'];
   if (n === 1) cands.push('Images/' + id + '.jpg');
   for (const src of cands){ if (await checkFile(src)) return {type:'file', src}; }
-  const du = getPhotos(id)[n-1];
-  if (du) return {type:'local', src:du};
   return {type:'empty'};
 }
 async function loadSlots(){
@@ -2432,269 +2257,33 @@ function paintSlot(i){
   if (!slot) return;
   const st = slotState[i];
   const img = slot.querySelector('img');
-  const empty = slot.querySelector('.slot-empty');
-  const del = slot.querySelector('.slot-del');
-  slot.classList.toggle('has-img', st.type !== 'empty');
-  if (st.type === 'empty'){
+  const has = st.type !== 'empty';
+  slot.classList.toggle('has-img', has);
+  slot.style.display = has ? '' : 'none';
+  if (!has){
     img.removeAttribute('src');
     img.hidden = true;
-    empty.hidden = false;
-  } else {
-    empty.hidden = true;
-    img.hidden = false;
-    img.referrerPolicy = 'no-referrer'; // Диск отдаёт картинки только без чужого Referer
-    img.onerror = () => {
-      if (st.type === 'local'){
-        const a = getPhotos(currentId);
-        a[i] = null;
-        setPhotos(currentId, a);
-      }
-      slotState[i] = {type:'empty'};
-      paintSlot(i);
-    };
-    img.src = st.src;
+    return;
   }
-  del.hidden = !(editMode && st.type === 'local');
-}
-function refreshDelButtons(){
-  for (let i = 0; i < 3; i++) paintSlot(i);
-}
-function pickFile(i){
-  filePick.value = '';
-  filePick.dataset.slot = i;
-  filePick.click();
-}
-filePick.addEventListener('change', () => {
-  const f = filePick.files && filePick.files[0];
-  if (!f) return;
-  if (!f.type.startsWith('image/')){ toast('Это не изображение'); return; }
-  cropOpen(f, parseInt(filePick.dataset.slot, 10) || 0);
-});
-function deletePhoto(i){
-  const a = getPhotos(currentId);
-  a[i] = null;
-  setPhotos(currentId, a);
-  slotState[i] = {type:'empty'};
-  paintSlot(i);
-  toast('Фото удалено');
+  img.hidden = false;
+  img.referrerPolicy = 'no-referrer'; // Диск отдаёт картинки только без чужого Referer
+  img.onerror = () => {
+    slotState[i] = {type:'empty'};
+    paintSlot(i);
+  };
+  img.src = st.src;
 }
 
 /* ---------- открытие / возврат ---------- */
 function openStudio(id){
   currentId = id;
-  editMode = false;
-  frame.classList.remove('editing');
-  editPanel.hidden = true;
-  setEditable(false);
   renderStudio(byId(id));
   showScreen('screen-studio', 1);
   loadSlots();
 }
 backBtn.addEventListener('click', () => {
-  if (editMode){
-    exitEditMode(false);
-    toast('Изменения не сохранены');
-  }
   showScreen('screen-list', -1);
 });
-
-/* ============================================================
-   РЕЖИМ РЕДАКТИРОВАНИЯ
-   ============================================================ */
-function setEditable(on){
-  $$('#screen-studio [data-field]').forEach(el => {
-    el.contentEditable = on ? 'true' : 'false';
-    el.spellcheck = false;
-  });
-  $$('#stSkills li').forEach(li => { li.contentEditable = on ? 'true' : 'false'; li.spellcheck = false; });
-  $$('#stGroups .g-ped, #stGroups .g-place').forEach(el => { el.contentEditable = on ? 'true' : 'false'; el.spellcheck = false; });
-}
-function enterEditMode(){
-  editMode = true;
-  frame.classList.add('editing');
-  editPanel.hidden = false;
-  accentSelect.value = currentEdit.accentType || '';
-  setEditable(true);
-  refreshDelButtons();
-}
-function collectEdits(){
-  const v = el => cleanText(el.innerText);
-  return {
-    title: v(stTitle),
-    catLabel: v(stCat),
-    ageLabel: v(stAge),
-    capLabel: v(stCap),
-    desc: v(stDesc),
-    skills: Array.from(stSkills.children).map(li => cleanText(li.innerText)),
-    result: v(stResult),
-    groups: Array.from(stGroups.querySelectorAll('.st-group')).map(row => ({
-      ped: cleanText(row.querySelector('.g-ped').innerText),
-      place: cleanText((row.querySelector('.g-place') || {innerText: ''}).innerText || '')
-    })),
-    accentType: accentSelect.value || null
-  };
-}
-/* Сохранение ТОЛЬКО по «Готово» или Ctrl+Q-выключению (не на input/blur) */
-function exitEditMode(save){
-  if (save && currentId){
-    const obj = collectEdits();
-    store.set('edit_' + currentId, JSON.stringify(obj));
-    currentEdit = obj;
-    applyAccent();
-    toast('Изменения сохранены');
-  }
-  editMode = false;
-  frame.classList.remove('editing');
-  editPanel.hidden = true;
-  setEditable(false);
-  refreshDelButtons();
-}
-editDone.addEventListener('click', () => exitEditMode(true));
-accentSelect.addEventListener('change', () => {
-  if (!editMode) return;
-  currentEdit.accentType = accentSelect.value || null; // поле cat в данных не меняется — только визуал
-  applyAccent();
-});
-// вставка только простым текстом в contenteditable
-document.addEventListener('paste', e => {
-  if (!editMode) return;
-  const t = e.clipboardData && e.clipboardData.getData('text/plain');
-  if (t && e.target.closest && e.target.closest('#screen-studio [contenteditable="true"]')){
-    e.preventDefault();
-    document.execCommand('insertText', false, t);
-  }
-});
-
-document.addEventListener('keydown', e => {
-  // Ctrl+Q — режим редактирования только на экране 3
-  if ((e.ctrlKey || e.metaKey) && (e.code === 'KeyQ' || (e.key || '').toLowerCase() === 'q')){
-    if (activeScreen === 'screen-studio'){
-      e.preventDefault();
-      if (editMode) exitEditMode(true); else enterEditMode();
-    }
-    return;
-  }
-  // горячие клавиши модалки кадрирования
-  if (!cropOverlay.hidden){
-    if (e.key === 'Escape'){ e.preventDefault(); closeCrop(); }
-    else if (e.key === 'Enter'){ e.preventDefault(); applyCrop(); }
-  }
-});
-
-/* ============================================================
-   КАДРИРОВАНИЕ 16:9
-   ============================================================ */
-let dispW = 0, dispH = 0, natW = 0, natH = 0, cropSlot = 0;
-const sel = {x:0, y:0, w:0, h:0};
-let drag = null;
-
-function paintSel(){
-  cropSel.style.left = sel.x + 'px';
-  cropSel.style.top = sel.y + 'px';
-  cropSel.style.width = sel.w + 'px';
-  cropSel.style.height = sel.h + 'px';
-}
-function initSelection(){
-  const AR = 16/9;
-  if (dispW / dispH >= AR){
-    const h = dispH, w = h * AR;
-    Object.assign(sel, {x:(dispW - w)/2, y:0, w, h});
-  } else {
-    const w = dispW, h = w / AR;
-    Object.assign(sel, {x:0, y:(dispH - h)/2, w, h});
-  }
-  paintSel();
-}
-function resizeSel(handle, px, py){
-  const AR = 16/9, MINW = 60;
-  const hasN = handle.includes('n'), hasS = handle.includes('s');
-  const hasW = handle.includes('w'), hasE = handle.includes('e');
-  const ax = hasW ? sel.x + sel.w : hasE ? sel.x : sel.x + sel.w/2;
-  const ay = hasN ? sel.y + sel.h : hasS ? sel.y : sel.y + sel.h/2;
-  let w = (hasW || hasE) ? Math.abs(px - ax) : Math.abs(py - ay) * AR;
-  const maxWside = hasW ? ax : hasE ? (dispW - ax) : 2 * Math.min(ax, dispW - ax);
-  const maxHside = hasN ? ay : hasS ? (dispH - ay) : 2 * Math.min(ay, dispH - ay);
-  const maxW = Math.min(maxWside, maxHside * AR);
-  w = clampN(w, MINW, Math.max(MINW, maxW));
-  const h = w / AR;
-  sel.w = w; sel.h = h;
-  sel.x = clampN(hasW ? ax - w : hasE ? ax : ax - w/2, 0, dispW - w);
-  sel.y = clampN(hasN ? ay - h : hasS ? ay : ay - h/2, 0, dispH - h);
-  paintSel();
-}
-cropSel.addEventListener('pointerdown', e => {
-  const hEl = e.target.closest('.h');
-  drag = {mode: hEl ? 'resize' : 'move', handle: hEl ? hEl.dataset.h : null, sx: e.clientX, sy: e.clientY, sel0: {...sel}};
-  cropSel.setPointerCapture(e.pointerId);
-  e.preventDefault();
-});
-cropSel.addEventListener('pointermove', e => {
-  if (!drag) return;
-  if (drag.mode === 'move'){
-    sel.x = clampN(drag.sel0.x + (e.clientX - drag.sx), 0, dispW - drag.sel0.w);
-    sel.y = clampN(drag.sel0.y + (e.clientY - drag.sy), 0, dispH - drag.sel0.h);
-    paintSel();
-  } else {
-    const r = cropStage.getBoundingClientRect();
-    resizeSel(drag.handle, e.clientX - r.left, e.clientY - r.top);
-  }
-});
-cropSel.addEventListener('pointerup', () => { drag = null; });
-cropSel.addEventListener('pointercancel', () => { drag = null; });
-
-function cropOpen(file, slot){
-  cropSlot = slot;
-  const fr = new FileReader();
-  fr.onload = () => {
-    const im = new Image();
-    im.onload = () => {
-      natW = im.naturalWidth; natH = im.naturalHeight;
-      cropOverlay.hidden = false; // показываем ДО замеров, иначе clientWidth = 0
-      const maxW = cropArea.clientWidth - 8, maxH = cropArea.clientHeight - 8;
-      const scale = Math.min(maxW / natW, maxH / natH, 2.5);
-      dispW = Math.max(60, Math.round(natW * scale));
-      dispH = Math.max(60, Math.round(natH * scale));
-      cropImg.src = fr.result;
-      cropImg.style.width = dispW + 'px';
-      cropImg.style.height = dispH + 'px';
-      initSelection();
-    };
-    im.onerror = () => toast('Не удалось открыть изображение');
-    im.src = fr.result;
-  };
-  fr.readAsDataURL(file);
-}
-function closeCrop(){ cropOverlay.hidden = true; }
-cropCancel.addEventListener('click', closeCrop);
-cropOverlay.addEventListener('click', e => { if (e.target === cropOverlay) closeCrop(); });
-
-function applyCrop(){
-  if (cropOverlay.hidden) return;
-  const sx = sel.x / dispW * natW;
-  const sy = sel.y / dispH * natH;
-  const sw = sel.w / dispW * natW;
-  const sh = sel.h / dispH * natH;
-  const outW = Math.round(clampN(sw, 800, 1920)); // не меньше 800px по ширине
-  const outH = Math.max(1, Math.round(outW * sh / sw));
-  const canvas = document.createElement('canvas');
-  canvas.width = outW; canvas.height = outH;
-  const ctx = canvas.getContext('2d');
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(cropImg, sx, sy, sw, sh, 0, 0, outW, outH);
-  let dataURL = '';
-  try { dataURL = canvas.toDataURL('image/jpeg', 0.85); }
-  catch(e){ toast('Не удалось обработать фото'); closeCrop(); return; }
-  const arr = getPhotos(currentId);
-  arr[cropSlot] = dataURL;
-  const saved = setPhotos(currentId, arr);
-  if (!saved) toast('Не удалось сохранить фото'); // превью всё равно показываем в сессии
-  else if (dataURL.length > 2 * 1024 * 1024) toast('Файл большой, может не сохраниться');
-  slotState[cropSlot] = {type:'local', src:dataURL};
-  paintSlot(cropSlot);
-  closeCrop();
-}
-cropApply.addEventListener('click', applyCrop);
 
 /* ============================================================
    ЗАПИСЬ XLSX (без библиотек)
@@ -3230,6 +2819,22 @@ resetOverlay.addEventListener('click', e => { if (e.target === resetOverlay) clo
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && !resetOverlay.hidden) closeReset();
 });
+/* полный сброс «памяти гостя» на этом устройстве: возраст, лагерь,
+   запись, старые правки и фото — как будто человек здесь впервые */
+function wipeGuestData(){
+  try {
+    const kill = [];
+    for (let i = 0; i < localStorage.length; i++){
+      const k = localStorage.key(i);
+      if (k && (k.lastIndexOf('photos_', 0) === 0 || k.lastIndexOf('edit_', 0) === 0)) kill.push(k);
+    }
+    for (const k of kill) localStorage.removeItem(k);
+    localStorage.removeItem('artek_age');
+    localStorage.removeItem('artek_camp');
+    localStorage.removeItem('artek_enrolled');
+  } catch(e){}
+}
+
 async function doReset(withBackup){
   if (!resetState || resetBusy) return;
   resetBusy = true;
@@ -3253,11 +2858,27 @@ async function doReset(withBackup){
     const n = Number(data.archived) || 0;
     toast('Готово: в архив — ' + n + ' ' + plural(n, 'заявка', 'заявки', 'заявок') + (data.sheet ? ' (лист «' + data.sheet + '»)' : ''));
     closeReset();
+    /* все пользователи — как новые: забываем возраст, лагерь и запись
+       на этом устройстве и возвращаемся на первый экран */
+    wipeGuestData();
     enrolledDevice = null;
-    try { store.set('artek_enrolled', 'null'); } catch(_e){}
     takenMap = null;
+    campTakenMap = null;
+    age = null;
+    campChoice = '';
+    campFilter = null;
+    filters.dir = 'all'; filters.q = ''; filters.hideF1 = false; filters.stream = 0;
+    listScroll = 0;
+    currentId = null;
+    closeAdmin();
+    ageInput.value = '';
+    try { campSelectEl.value = ''; } catch(_e){}
+    hideAgeError();
+    $$('.age-chip').forEach(c => c.classList.remove('sel'));
+    $$('#dirChips .chip').forEach(c => c.classList.toggle('on', c.dataset.dir === 'all'));
+    $$('#streamChips .chip').forEach(c => c.classList.toggle('on', (parseInt(c.dataset.stream, 10) || 0) === 0));
     paintEnrollBox();
-    refreshAdmin();
+    showScreen('screen-age', 1);
     loadEnrollCounts(true);
   } catch(err){
     toast('Сброс не удался: ' + (err && err.message));
@@ -3273,6 +2894,17 @@ $('#resetGo').addEventListener('click', () => doReset(false));
 /* ============================================================
    ИНИЦИАЛИЗАЦИЯ
    ============================================================ */
+/* разовая уборка: локальные правки и личные фото больше не используются —
+   фото живут на Яндекс.Диске, тексты — в таблице на Диске */
+try {
+  const stale = [];
+  for (let i = 0; i < localStorage.length; i++){
+    const k = localStorage.key(i);
+    if (k && (k.lastIndexOf('edit_', 0) === 0 || k.lastIndexOf('photos_', 0) === 0)) stale.push(k);
+  }
+  for (const k of stale) localStorage.removeItem(k);
+} catch(e){}
+
 buildSlots();
 if (!lsOK) degradeBadge.hidden = false;
 bootData();
